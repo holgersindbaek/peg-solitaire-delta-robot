@@ -1,0 +1,7 @@
+{
+    "configuration": "cpu=atmega2560",
+    "board": "arduino:avr:mega",
+    "port": "/dev/tty.usbmodem11401",
+    "programmer": "avrisp",
+    "sketch": "Peg-Solitaire 2.0.ino"
+}
