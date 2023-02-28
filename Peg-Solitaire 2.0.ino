@@ -163,15 +163,12 @@ void loop() {
 
       float pos_1 = odrive_1.GetPosition(0);
       Serial << "1: " << String(pos_1) << '\n';
-      Serial.println(pos_1);
 
       float pos_2 = odrive_2.GetPosition(0);
       Serial << "2: " << String(pos_2) << '\n';
-      Serial.println(pos_2);
 
       float pos_3 = odrive_3.GetPosition(0);
       Serial << "3: " << String(pos_3) << '\n';
-      Serial.println(pos_3);
 
       // Serial.println(odrive_1.GetPosition(0));
       // Serial.println(odrive_1.GetPosition(0));

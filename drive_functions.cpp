@@ -1,31 +1,28 @@
 #include "drive_functions.h"
 
-void get_status() {
+void get_status(String value = "pos_rel") {
   // Read the position from the encoder (https://docs.odriverobotics.com/v/latest/commands.html#encoder-position-and-velocity)
-
-  struct hash
-  {
-    String key;
-    String value;
-  };
-  hash values[] = {{"pos_rel", "r axis0.pos_vel_mapper.pos_rel"}, {"vel_rel", "r axis0.pos_vel_mapper.vel_rel"}};
 
   Serial.println("+----------+----------+----------+----------+");
   Serial.println("|          | ODrive 1 | ODrive 2 | ODrive 3 |");
   Serial.println("+----------+----------+----------+----------+");
-  for (hash value : values) {
-    String valuesString = String("| " + value.key + "     ").substring(0, 11);
+  String valuesString = String("| " + value + "     ").substring(0, 11);
 
-    for (int index = 0; index < 3; index++) {
-      // odrive_serial_array[index]->println(value.value);
-      // valuesString += String("| " + String(odrive_array[index].readFloat()) + "      ").substring(0, 11);
-      float rel_pos = odrive_array[index].GetPosition(0);
-      valuesString += String("| " + String(rel_pos) + "      ").substring(0, 11);
+  for (int index = 0; index < 3; index++) {
+    // odrive_serial_array[index]->println(value.value);
+    // valuesString += String("| " + String(odrive_array[index].readFloat()) + "      ").substring(0, 11);
+    float returned_value;
+    if (value == "pos_rel") {
+      returned_value = odrive_array[index].GetPosition(0);
+    } else if (value == "vel_rel") {
+      returned_value = odrive_array[index].GetVelocity(0);
     }
 
-    Serial.println(valuesString + "|");
-    Serial.println("+----------+----------+----------+----------+");
-  };
+    valuesString += String("| " + String(returned_value) + "      ").substring(0, 11);
+  }
+
+  Serial.println(valuesString + "|");
+  Serial.println("+----------+----------+----------+----------+");
 }
 
 void calibrate_drives() {
@@ -71,11 +68,13 @@ void set_drives_closed_loop_control() {
 
 void zero_drives() {
   for (int drive_index = 0; drive_index < 3; drive_index++) {
+    delay(500);
     // Grab relative position from encoder
-    odrive_serial_array[drive_index]->println("r axis0.pos_vel_mapper.pos_rel");
+    float rel_pos = odrive_array[drive_index].GetPosition(0);
+    Serial.println(rel_pos);
 
     // Convert position to degrees with gear radius
-    double pos_rounds = odrive_array[drive_index].readFloat() / gear_ratio;
+    double pos_rounds = rel_pos / gear_ratio;
     double pos_rad = pos_rounds * 2 * PI;
     double pos = (pos_rad * 180) / PI;
 
@@ -84,5 +83,7 @@ void zero_drives() {
 
     // Save offset to Arduino EEPROM
     EEPROM_set_double(drive_index * 100, pos);
+
+    Serial.println("ODrive " + String(drive_index + 1) + " zero position: " + String(pos) + " degrees (" + String(rel_pos) + " counts)");
   }
 }

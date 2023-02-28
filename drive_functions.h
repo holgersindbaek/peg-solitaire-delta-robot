@@ -11,7 +11,7 @@
   extern double zero_offset_array[];
   extern const int gear_ratio;
 
-  void get_status();
+  void get_status(String value = "pos_rel");
   void calibrate_drive(int odrive_number);
   void calibrate_drives();
   void set_drives_idle();
