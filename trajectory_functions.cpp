@@ -1,17 +1,11 @@
 #include "trajectory_functions.h"
 
-void get_traj(double x, double y, double z, TrajValues traj_values[3], long &max_steps, float time_step_delta) {
-  float vel = 0.0;
-  float max_vel = 0.5;
-  float max_acc = 0.5;
-  float max_dec = 0.5; // Should be positive
-
-  double values[3] = {x, y, z};
+void get_traj(float start_points[3], double end_points[3], TrajValues traj_values[3]) {
   for (int i = 0; i < 3; i++) {
     TrajValues &traj_value = traj_values[i];
-    traj_value.start_point = 0.0; // TODO: Change this to the actual start point
-    traj_value.end_point = values[i];
-    traj_value.vel = vel;
+    traj_value.start_point = start_points[i];
+    traj_value.end_point = end_points[i];
+    traj_value.vel = 0.0; // Starting velocity
     traj_value.max_vel = max_vel;
     traj_value.max_acc = max_acc;
     traj_value.max_dec = max_dec;
@@ -23,10 +17,10 @@ void get_traj(double x, double y, double z, TrajValues traj_values[3], long &max
     traj_value.max_dec_signed = 0.0;
     traj_value.y_acc = 0.0;
 
-    get_trapezoidal_traj(traj_value.start_point, traj_value.end_point, traj_value.vel, traj_value.max_vel, traj_value.max_acc, traj_value.max_dec, traj_value.acc_time_step, traj_value.vel_time_step, traj_value.complete_time_step, traj_value.max_acc_signed, traj_value.max_vel_signed, traj_value.max_dec_signed, traj_value.y_acc);
+    // Serial.println("traj_value.start_point: " + String(traj_value.start_point));
+    // Serial.println("traj_value.end_point: " + String(traj_value.end_point));
 
-    long steps = ceil(traj_value.complete_time_step / time_step_delta);
-    if (steps > max_steps) max_steps = steps;
+    get_trapezoidal_traj(traj_value.start_point, traj_value.end_point, traj_value.vel, traj_value.max_vel, traj_value.max_acc, traj_value.max_dec, traj_value.acc_time_step, traj_value.vel_time_step, traj_value.complete_time_step, traj_value.max_acc_signed, traj_value.max_vel_signed, traj_value.max_dec_signed, traj_value.y_acc);
   }
 }
 

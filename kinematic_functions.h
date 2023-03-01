@@ -12,10 +12,12 @@ extern const double r_o;
 extern const double r_u;
 extern const double l_m;
 extern const int gear_ratio;
+extern const float horizontal_offset_angle;
 
 void move_to_position(double x, double y, double z);
-void calculate_motor_angles(double x, double y, double z, double &theta_1, double &theta_2, double &theta_3);
-void calculate_motor_angle(double x0, double y0, double z0, double &theta);
-void set_angle(int odrive_number, double theta);
+void calculate_motor_angles(double x, double y, double z, double &theta_deg_1, double &theta_deg_2, double &theta_deg_3);
+void calculate_motor_angle(double x0, double y0, double z0, double &theta_deg);
+void calculate_motor_position(float theta_rounds[3], float coordinates[3]);
+void set_angle(int odrive_number, double theta_deg, double vel = 1.0);
 
 #endif

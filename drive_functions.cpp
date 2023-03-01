@@ -43,7 +43,8 @@ void calibrate_drive(int odrive_number) {
     if (!odrive_array[odrive_number - 1].run_state(0, requested_states[state_index], true)) {
       Serial.println("Failed");
       return;
-    }  }
+    }
+  }
 }
 
 void set_drives_idle() {
@@ -69,6 +70,7 @@ void set_drives_closed_loop_control() {
 void zero_drives() {
   for (int drive_index = 0; drive_index < 3; drive_index++) {
     delay(500);
+
     // Grab relative position from encoder
     float rel_pos = odrive_array[drive_index].GetPosition(0);
     Serial.println(rel_pos);
@@ -76,14 +78,14 @@ void zero_drives() {
     // Convert position to degrees with gear radius
     double pos_rounds = rel_pos / gear_ratio;
     double pos_rad = pos_rounds * 2 * PI;
-    double pos = (pos_rad * 180) / PI;
+    double pos_deg = (pos_rad * 180) / PI;
 
     // Save offset to array
-    zero_offset_array[drive_index] = pos;
+    zero_offset_array[drive_index] = pos_deg;
 
     // Save offset to Arduino EEPROM
-    EEPROM_set_double(drive_index * 100, pos);
+    EEPROM_set_double(drive_index * 100, pos_deg);
 
-    Serial.println("ODrive " + String(drive_index + 1) + " zero position: " + String(pos) + " degrees (" + String(rel_pos) + " counts)");
+    Serial.println("ODrive " + String(drive_index + 1) + " zero position: " + String(pos_deg) + " degrees (" + String(rel_pos) + " counts)");
   }
 }

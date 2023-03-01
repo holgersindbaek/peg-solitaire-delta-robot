@@ -43,18 +43,20 @@ double zero_offset_array[3] = {
 };
 
 // Robot parameters. Definitions are as follows: https://imgur.com/a/edboVco.
-const double l_s = 554.27; // Base radius (mm) (f)
-const double r_o = 160.0;  // Bicep length (mm) (rf)
-const double r_u = 220.0;  // Forearm length (mm) (re)
-const double l_m = 138.57; // End effector length (mm) (e)
-const int gear_ratio = 8;  // Gear ratio
+const double l_s = 554.27;                    // Base radius (mm) (f)
+const double r_o = 160.0;                     // Bicep length (mm) (rf)
+const double r_u = 220.0;                     // Forearm length (mm) (re)
+const double l_m = 138.57;                    // End effector length (mm) (e)
+const int gear_ratio = 8;                     // Gear ratio
+const float horizontal_offset_angle = -63.2;  // Angle of the horizontal offset
 
-// Variabls used to run function every 5 seconds
-unsigned long previousMillis = 0;
-const long interval = 5000;
+// Trajectory parameters
+const float time_step_delta = 0.1; // Decide which timesteps to divide the trajectory into
+const float max_vel = 20.0; // Max motor velocity (rounds/s)
+const float max_acc = 0.5; // Max motor acceleration (rounds/s)
+const float max_dec = 0.5; // Max motor deceleration (rounds/s) (should be positive)
 
 void setup() {
-  
   // ODrive uses 115200 baud
   odrive_serial_1.begin(115200);
   odrive_serial_2.begin(115200);
@@ -69,7 +71,13 @@ void setup() {
     double value;
     EEPROM_get_double(drive_index * 100, value);
     zero_offset_array[drive_index] = value;
-    Serial.println(value);
+    Serial.println("Loaded zero offset for drive " + String(drive_index) + ": " + String(value));
+  }
+
+  // Set parameters for ODrives
+  for (int drive_index = 0; drive_index < 3; ++drive_index) {
+    odrive_serial_array[drive_index]->println("w axis0.controller.config.vel_limit " + String(max_vel));
+    odrive_serial_array[drive_index]->println("w axis0.controller.config.vel_limit_tolerance " + String(2.0)); // 20% tolerance (overshot)
   }
 
   ////////////////////////////////
@@ -120,69 +128,8 @@ void loop() {
       set_drives_closed_loop_control();
     } else if (function_name == "zero_drives") {
       zero_drives();
-    } else if (function_name == "test") {
-      // HardwareSerial serial = odrive_serial_1;
-      // odrive_serial_array[0]->println("r axis0.pos_vel_mapper.pos_rel");
-
-
-      // Serial.println(odrive_serial_array[0]->readString());
-
-      // delay(100);
-      // odrive_serial_1 << "r axis0.pos_vel_mapper.pos_rel\n";
-      // delay(100);
-      // Serial << "1: " << String(odrive_1.readFloat()) << '\n';
-      // delay(100);
-      // odrive_serial_2 << "r axis0.pos_vel_mapper.pos_rel\n";
-      // delay(100);
-      // Serial << "2: " << String(odrive_2.readFloat()) << '\n';
-      // delay(100);
-      // odrive_serial_1 << "r axis0.pos_vel_mapper.pos_rel\n";
-      // delay(100);
-      // Serial << "3: " << String(odrive_3.readFloat()) << '\n';
-      // delay(100);
-
-      // odrive_serial_array[0]->println("r axis0.pos_vel_mapper.pos_rel");
-      // Serial << "1: " << String(odrive_1.readFloat()) << '\n';
-      // delay(100);
-      // odrive_serial_array[0]->println("r axis0.pos_vel_mapper.vel_rel");
-      // Serial << "1: " << String(odrive_1.readFloat()) << '\n';
-      // delay(100);
-      // odrive_serial_array[0]->println("r axis0.pos_vel_mapper.pos_rel");
-      // Serial << "2: " << String(odrive_2.readFloat()) << '\n';
-      // delay(100);
-      // odrive_serial_array[0]->println("r axis0.pos_vel_mapper.vel_rel");
-      // Serial << "2: " << String(odrive_2.readFloat()) << '\n';
-      // delay(100);
-      // odrive_serial_array[0]->println("r axis0.pos_vel_mapper.pos_rel");
-      // Serial << "3: " << String(odrive_3.readFloat()) << '\n';
-      // delay(100);
-      // odrive_serial_array[0]->println("r axis0.pos_vel_mapper.vel_rel");
-      // Serial << "3: " << String(odrive_3.readFloat()) << '\n';
-
-      // Serial << "3: " << String(odrive_3.readFloat()) << '\n';
-
-      float pos_1 = odrive_1.GetPosition(0);
-      Serial << "1: " << String(pos_1) << '\n';
-
-      float pos_2 = odrive_2.GetPosition(0);
-      Serial << "2: " << String(pos_2) << '\n';
-
-      float pos_3 = odrive_3.GetPosition(0);
-      Serial << "3: " << String(pos_3) << '\n';
-
-      // Serial.println(odrive_1.GetPosition(0));
-      // Serial.println(odrive_1.GetPosition(0));
-      // Serial.println(odrive_2.GetPosition(0));
-      // Serial.println(odrive_3.GetPosition(0));
-      // Serial.println((*odrive_array[0]).GetPosition(0));
     }
 
     Serial << "Finished " << function_name << "...\n\n";
   }
-
-  // unsigned long currentMillis = millis();
-  // if (currentMillis - previousMillis >= interval) {
-  //   previousMillis = currentMillis;
-  //   get_status();
-  // }
 }
