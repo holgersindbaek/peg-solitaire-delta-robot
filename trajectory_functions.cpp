@@ -1,6 +1,11 @@
 #include "trajectory_functions.h"
 
 void get_traj(float start_points[3], double end_points[3], TrajValues traj_values[3]) {
+  float vel = 0.0;
+  float max_vel = 0.5;
+  float max_acc = 0.5;
+  float max_dec = 0.5; // Should be positive
+
   for (int i = 0; i < 3; i++) {
     TrajValues &traj_value = traj_values[i];
     traj_value.start_point = start_points[i];
@@ -17,8 +22,8 @@ void get_traj(float start_points[3], double end_points[3], TrajValues traj_value
     traj_value.max_dec_signed = 0.0;
     traj_value.y_acc = 0.0;
 
-    // Serial.println("traj_value.start_point: " + String(traj_value.start_point));
-    // Serial.println("traj_value.end_point: " + String(traj_value.end_point));
+    Serial.println("traj_value.start_point: " + String(traj_value.start_point));
+    Serial.println("traj_value.end_point: " + String(traj_value.end_point));
 
     get_trapezoidal_traj(traj_value.start_point, traj_value.end_point, traj_value.vel, traj_value.max_vel, traj_value.max_acc, traj_value.max_dec, traj_value.acc_time_step, traj_value.vel_time_step, traj_value.complete_time_step, traj_value.max_acc_signed, traj_value.max_vel_signed, traj_value.max_dec_signed, traj_value.y_acc);
   }
@@ -84,34 +89,34 @@ void get_trapezoidal_traj(float start_point, float end_point, float vel, float m
 }
 
 void get_traj_step(float start_point, float end_point, float time_step, float acc_time_step, float vel_time_step, float complete_time_step, float vel, float max_acc_signed, float max_dec_signed, float max_vel_signed, float y_acc, TrajStep& traj_step, int coordinate_index) {
-  // Serial.print("STEP: " + String(time_step));
+  Serial.print("STEP: " + String(time_step) + " = " + String(acc_time_step) + " = " + String(vel_time_step) + " = " + String(complete_time_step));
   if (time_step < 0.0) { // Initial Condition
-    // Serial.println(" - Initial Condition");
+    Serial.println(" - Initial Condition");
     traj_step.pos[coordinate_index] = start_point;
     traj_step.vel[coordinate_index] = vel;
     traj_step.acc[coordinate_index] = 0.0;
 
   } else if (time_step < acc_time_step) { // Accelerating
-    // Serial.println(" - Accelerating");
+    Serial.println(" - Accelerating");
     traj_step.pos[coordinate_index] = start_point + vel * time_step + 0.5 * max_acc_signed * pow(time_step, 2);
     traj_step.vel[coordinate_index] = vel + max_acc_signed * time_step;
     traj_step.acc[coordinate_index] = max_acc_signed;
 
   } else if (time_step < acc_time_step + vel_time_step) { // Coasting
-    // Serial.println(" - Coasting");
+    Serial.println(" - Coasting");
     traj_step.pos[coordinate_index] = y_acc + max_vel_signed * (time_step - acc_time_step);
     traj_step.vel[coordinate_index] = max_vel_signed;
     traj_step.acc[coordinate_index] = 0.0;
   
   } else if (time_step < complete_time_step) { // Deceleration
-    // Serial.println(" - Deceleration");
+    Serial.println(" - Deceleration");
     float td = time_step - complete_time_step;
     traj_step.pos[coordinate_index] = end_point + 0.5 * max_dec_signed * td * td;
     traj_step.vel[coordinate_index] = max_dec_signed * td;
     traj_step.acc[coordinate_index] = max_dec_signed;
   
   } else if (time_step >= complete_time_step) { // Final Condition
-    // Serial.println(" - Final Condition");
+    Serial.println(" - Final Condition");
     traj_step.pos[coordinate_index] = end_point;
     traj_step.vel[coordinate_index] = 0.0;
     traj_step.acc[coordinate_index] = 0.0;

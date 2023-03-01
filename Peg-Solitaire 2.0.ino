@@ -1,3 +1,17 @@
+////////////////////////////////
+// Startup sequence
+////////////////////////////////
+// 1. Detach arms from biceps, move biceps to vertical position and run `calibrate_drives()` to calibrate all drives
+// 2. Attach zeroing device to board, attach arms to biceps, move end-effector onto zero-device and run `zero_drives()` to zero all drives.
+// 3. Move end-effector up, detach zeroing device from board, and run `set_drives_closed_loop_control()`. You're ready to go!
+
+////////////////////////////////
+// Main commands (all available commands can be found in the `loop()` function).
+////////////////////////////////
+// `move_to_position(x, y, z)` - Move end-effector to position (x, y, z).
+// `play_winning_peg_solitaire()` - Play winning peg solitaire game. Remember to set up the board before you start.
+// `get_status(val)` - Get position ("pos_rel") or velocity ("vel_rel") of drives.
+
 // Include libraries
 #include <math.h>
 #include <HardwareSerial.h>
@@ -51,10 +65,10 @@ const int gear_ratio = 8;                     // Gear ratio
 const float horizontal_offset_angle = -63.2;  // Angle of the horizontal offset
 
 // Trajectory parameters
-const float time_step_delta = 0.1; // Decide which timesteps to divide the trajectory into
+const float time_step_delta = 1.0; // Decide which timesteps to divide the trajectory into
 const float max_vel = 20.0; // Max motor velocity (rounds/s)
-const float max_acc = 0.5; // Max motor acceleration (rounds/s)
-const float max_dec = 0.5; // Max motor deceleration (rounds/s) (should be positive)
+const float max_acc = 0.5;  // Max motor acceleration (rounds/s^2)
+const float max_dec = 0.5;  // Max motor deceleration (rounds/s^2) (should be positive)
 
 void setup() {
   // ODrive uses 115200 baud
@@ -80,15 +94,17 @@ void setup() {
     odrive_serial_array[drive_index]->println("w axis0.controller.config.vel_limit_tolerance " + String(2.0)); // 20% tolerance (overshot)
   }
 
-  ////////////////////////////////
-  // Program guide
-  ////////////////////////////////
+  // HACK: The function `GetPosition` doesn't return the correct value until after it's been called twice
+  for (int i = 0; i < 3; i++) {
+    for (int drive_index = 0; drive_index < 3; drive_index++) {
+      odrive_array[drive_index].GetPosition(0);
+    }
+  }
 
-
-  Serial.println("Parameters have been set and the robot is ready!");
-  Serial.println("Call 'calibrate_drives()' to calibrate all drives. This must be done before any movements are made.");
-  Serial.println("Call 'calibrate_drive(drive_number)' to calibrate a single drive.");
-  Serial.println("Call 'move_to_position(x, y, z)' to move end effector to position.");
+  // Welcome text in the prompt
+  Serial.println("////////////////////////////////");
+  Serial.println("// Ready for your commands...");
+  Serial.println("////////////////////////////////");
 }
 
 void loop() {
@@ -107,6 +123,16 @@ void loop() {
       calibrate_drive(odrive_number);
     } else if (function_name == "calibrate_drives") {
       calibrate_drives();
+    } else if (function_name == "set_drives_idle") {
+      set_drives_idle();
+    } else if (function_name == "set_drives_closed_loop_control") {
+      set_drives_closed_loop_control();
+    } else if (function_name == "zero_drives") {
+      zero_drives();
+    } else if (function_name == "get_status") {
+      get_status();
+    } else if (function_name == "get_position") {
+      get_position();
     } else if (function_name == "move_to_position") {
       double x = params[0];
       double y = params[1];
@@ -118,16 +144,6 @@ void loop() {
       set_angle(odrive_number, theta);
     } else if (function_name == "play_winning_peg_solitaire") {
       play_winning_peg_solitaire();
-    } else if (function_name == "play_random_peg_solitaire") {
-      play_random_peg_solitaire();
-    } else if (function_name == "get_status") {
-      get_status();
-    } else if (function_name == "set_drives_idle") {
-      set_drives_idle();
-    } else if (function_name == "set_drives_closed_loop_control") {
-      set_drives_closed_loop_control();
-    } else if (function_name == "zero_drives") {
-      zero_drives();
     }
 
     Serial << "Finished " << function_name << "...\n\n";

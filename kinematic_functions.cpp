@@ -4,7 +4,6 @@
 void move_to_position(double x, double y, double z) {
   long max_complete_time_step = 0;
   float time_step_deltas[3] = {time_step_delta, time_step_delta, time_step_delta};
-
   float start_thetas[3] = {odrive_array[0].GetPosition(0), odrive_array[1].GetPosition(0), odrive_array[2].GetPosition(0)};
   float start_points[3];
   calculate_motor_position(start_thetas, start_points);
@@ -32,9 +31,9 @@ void move_to_position(double x, double y, double z) {
   for (int coordinate_index = 0; coordinate_index < 3; coordinate_index++) {
     TrajValues traj_value = traj_values[coordinate_index];
 
-    Serial.println("traj_value.complete_time_step: " + String(traj_value.complete_time_step));
+    // Serial.println("traj_value.complete_time_step: " + String(traj_value.complete_time_step));
     time_step_deltas[coordinate_index] = traj_value.complete_time_step / max_complete_time_step * time_step_delta;
-    Serial.println("traj_value.complete_time_step / max_complete_time_step * time_step_delta: " + String(traj_value.complete_time_step / max_complete_time_step * time_step_delta));
+    // Serial.println("traj_value.complete_time_step / max_complete_time_step * time_step_delta: " + String(traj_value.complete_time_step / max_complete_time_step * time_step_delta));
   }
 
   Serial.println("max_complete_time_step: " + String(max_complete_time_step));
@@ -50,16 +49,16 @@ void move_to_position(double x, double y, double z) {
 
       get_traj_step(traj_value.start_point, traj_value.end_point, time_step, traj_value.acc_time_step, traj_value.vel_time_step, traj_value.complete_time_step, traj_value.vel, traj_value.max_acc_signed, traj_value.max_dec_signed, traj_value.max_vel_signed, traj_value.y_acc, traj_step, coordinate_index);
     }
-    // Serial.println("pos: " + String(traj_step.pos[0]) + " - " + String(traj_step.pos[1]) + " - " + String(traj_step.pos[2]) + " || vel: " + String(traj_step.vel[0]) + " - " + String(traj_step.vel[1]) + " - " + String(traj_step.vel[2]) + " || acc: " + String(traj_step.acc[0]) + " - " + String(traj_step.acc[1]) + " - " + String(traj_step.acc[2]));
+    Serial.println("pos: " + String(traj_step.pos[0]) + " - " + String(traj_step.pos[1]) + " - " + String(traj_step.pos[2]) + " || vel: " + String(traj_step.vel[0]) + " - " + String(traj_step.vel[1]) + " - " + String(traj_step.vel[2]) + " || acc: " + String(traj_step.acc[0]) + " - " + String(traj_step.acc[1]) + " - " + String(traj_step.acc[2]));
 
     // Calculate angles
     double theta_deg_1, theta_deg_2, theta_deg_3;
     calculate_motor_angles(traj_step.pos[0], traj_step.pos[1], traj_step.pos[2], theta_deg_1, theta_deg_2, theta_deg_3);
 
-    // Move the motors to the calculated angles
-    set_angle(1, theta_deg_1, abs(traj_step.vel[0]));
-    set_angle(2, theta_deg_2, abs(traj_step.vel[1]));
-    set_angle(3, theta_deg_3, abs(traj_step.vel[2]));
+    // // Move the motors to the calculated angles
+    // set_angle(1, theta_deg_1, abs(traj_step.vel[0]));
+    // set_angle(2, theta_deg_2, abs(traj_step.vel[1]));
+    // set_angle(3, theta_deg_3, abs(traj_step.vel[2]));
 
     delay(time_step_delta * 1000);
   }

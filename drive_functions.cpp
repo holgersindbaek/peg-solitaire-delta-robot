@@ -25,9 +25,28 @@ void get_status(String value = "pos_rel") {
   Serial.println("+----------+----------+----------+----------+");
 }
 
+void get_position() {
+  float start_thetas[3] = {odrive_array[0].GetPosition(0), odrive_array[1].GetPosition(0), odrive_array[2].GetPosition(0)};
+  float start_points[3];
+  calculate_motor_position(start_thetas, start_points);
+
+  Serial.println("+----------+----------+----------+----------+");
+  Serial.println("|          | x        | y        | z        |");
+  Serial.println("+----------+----------+----------+----------+");
+  String valuesString = String("| Position      ").substring(0, 11);
+
+  for (int index = 0; index < 3; index++) {
+    valuesString += String("| " + String(start_points[index]) + "      ").substring(0, 11);
+  }
+
+  Serial.println(valuesString + "|");
+  Serial.println("+----------+----------+----------+----------+");
+}
+
 void calibrate_drives() {
   for (int index = 0; index < 3; index++) {
     calibrate_drive(index + 1);
+    delay(5000);
   }
 }
 
@@ -43,6 +62,13 @@ void calibrate_drive(int odrive_number) {
     if (!odrive_array[odrive_number - 1].run_state(0, requested_states[state_index], true)) {
       Serial.println("Failed");
       return;
+    }
+  }
+
+  // HACK: The function `GetPosition` doesn't return the correct value until after it's been called twice
+  for (int i = 0; i < 3; i++) {
+    for (int drive_index = 0; drive_index < 3; drive_index++) {
+      odrive_array[drive_index].GetPosition(0);
     }
   }
 }
@@ -73,7 +99,7 @@ void zero_drives() {
 
     // Grab relative position from encoder
     float rel_pos = odrive_array[drive_index].GetPosition(0);
-    Serial.println(rel_pos);
+    delay(500);
 
     // Convert position to degrees with gear radius
     double pos_rounds = rel_pos / gear_ratio;
