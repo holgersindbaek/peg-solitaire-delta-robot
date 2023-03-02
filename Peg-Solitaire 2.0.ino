@@ -69,16 +69,20 @@ const double r_u = 220.0;                     // Forearm length (mm) (re)
 const double l_m = 138.57;                    // End effector length (mm) (e)
 const int gear_ratio = 8;                     // Gear ratio
 const float horizontal_offset_angle = -63.2;  // Angle of the horizontal offset
-const float x_max = 115;
+const float x_max = 115;                      // Boundaries of the workspace
 const float x_min = -115;
 const float y_max = 115;
 const float y_min = -115;
 const float z_max = -160;
 const float z_min = -250;
+const float z_zero = -250;                   // Position of y when end-effector is zeroed (mm)
+const float board_top_offset = -3;           // Offset from top of board to zero (mm)
+const float suction_bottom_offset = 20;      // Offset for bottom of suction cup (mm)
+const float suction_grab_offset = 14;        // Offset for making suction cub grab (mm)
 
 // Trajectory parameters
 // NOTE: To get a trajectory that isn't out of control, velocity and acceleration should be close to each other
-const float throttle_factor = 0.01;  // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
+const float throttle_factor = 0.1;  // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
 const float time_step_delta = 0.1; // Decide which timesteps to divide the trajectory into
 const float max_vel = 60.0 * throttle_factor; // Max motor velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
 const float max_acc = 60.0 * throttle_factor; // Max motor acceleration (rounds/s^2)
@@ -177,6 +181,8 @@ void loop() {
       set_suction_state(state);
     } else if (function_name == "play_winning_peg_solitaire") {
       play_winning_peg_solitaire();
+    }  else if (function_name == "play_random_peg_solitaire") {
+      play_random_peg_solitaire();
     }
 
     Serial << "Finished " << function_name << "...\n\n";
