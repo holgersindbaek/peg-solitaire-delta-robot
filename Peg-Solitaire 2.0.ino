@@ -1,9 +1,9 @@
 ////////////////////////////////
 // Startup sequence
 ////////////////////////////////
-// 1. Detach arms from biceps, move biceps to vertical position and run `calibrate_drives()` to calibrate all drives
+// 1. Detach suction cup from end-effector, detach arms from biceps, move biceps to vertical position and run `calibrate_drives()` to calibrate all drives
 // 2. Attach zeroing device to board, attach arms to biceps, move end-effector onto zero-device and run `zero_drives()` to zero all drives. Run `get_position()` to make sure it's correct. Position should be (0, 0, -250).
-// 3. Move end-effector up, detach zeroing device from board, and run `initialize_drives()`. You're ready to go!
+// 3. Move end-effector up, detach zeroing device from board, and run `initialize_drives()`. Re-attach suction cup to end-effector. You're ready to go!
 
 ////////////////////////////////
 // Main commands (all available commands can be found in the `loop()` function).
@@ -18,6 +18,7 @@
 #include <SoftwareSerial.h>
 #include <ODriveArduino.h>
 #include <EEPROM.h>
+#include <Servo.h>
 
 // Printing with stream operator helper functions
 template<class T> inline Print& operator <<(Print &obj,     T arg) { obj.print(arg);    return obj; }
@@ -27,7 +28,12 @@ template<>        inline Print& operator <<(Print &obj, float arg) { obj.print(a
 #include "helper_functions.h"
 #include "kinematic_functions.h"
 #include "drive_functions.h"
+#include "suction_functions.h"
 #include "peg_solitaire_functions.h"
+
+// Setup vacuum
+Servo solenoid_valve_servo;   // Solenoid valve
+Servo air_pump_servo; // Air pump
 
 ////////////////////////////////
 // Set up ODrive
@@ -92,6 +98,10 @@ void setup() {
   // Serial to PC
   Serial.begin(115200);
   while (!Serial) ; // wait for Arduino Serial Monitor to open
+
+  // Representing the air pump plug 10 pin, the solenoid valve plug 8 pin arduino control
+  solenoid_valve_servo.attach(10);
+  air_pump_servo.attach(8);
 
   // Load zero offsets from EEPROM
   for (int drive_index = 0; drive_index < 3; drive_index++) {
@@ -162,6 +172,9 @@ void loop() {
       int odrive_number = round(params[0]);
       double theta = params[1];
       set_angle(odrive_number, theta);
+    } else if (function_name == "set_suction_state") {
+      int state = params[0];
+      set_suction_state(state);
     } else if (function_name == "play_winning_peg_solitaire") {
       play_winning_peg_solitaire();
     }

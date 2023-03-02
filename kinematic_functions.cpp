@@ -59,6 +59,7 @@ void move_to_position(double x, double y, double z) {
       get_traj_step(traj_value.start_point, traj_value.end_point, time_step, traj_value.acc_time_step, traj_value.vel_time_step, traj_value.complete_time_step, traj_value.vel, traj_value.max_acc_signed, traj_value.max_dec_signed, traj_value.max_vel_signed, traj_value.y_acc, traj_step, coordinate_index);
     }
 
+    // Print out trajectory step values
     // Serial.println("step_index: " + String(step_index) + " || " + "pos: " + String(traj_step.pos[0]) + " - " + String(traj_step.pos[1]) + " - " + String(traj_step.pos[2]) + " || vel: " + String(traj_step.vel[0]) + " - " + String(traj_step.vel[1]) + " - " + String(traj_step.vel[2]) + " || acc: " + String(traj_step.acc[0]) + " - " + String(traj_step.acc[1]) + " - " + String(traj_step.acc[2]));
 
     if (
@@ -127,7 +128,7 @@ void move_to_position(double x, double y, double z) {
 }
 
 void set_position(double x, double y, double z, double vel_x = max_vel, double vel_y = max_vel, double vel_z = max_vel) {
-  Serial.println("set_position x: " + String(x) + " || y: " + String(y) + " || z: " + String(z) + " || vel_x: " + String(vel_x) + " || vel_y: " + String(vel_y) + " || vel_z: " + String(vel_z));
+  // Serial.println("set_position x: " + String(x) + " || y: " + String(y) + " || z: " + String(z) + " || vel_x: " + String(vel_x) + " || vel_y: " + String(vel_y) + " || vel_z: " + String(vel_z));
 
   // Calculate angles
   double theta_deg_1, theta_deg_2, theta_deg_3;
@@ -168,17 +169,6 @@ void set_angle(int odrive_number, double theta_deg, double vel = max_vel) {
   double real_theta_deg = horizontal_offset_deg + theta_deg;
   double real_theta_rad = real_theta_deg * PI / 180;
   double real_theta_rounds = real_theta_rad / (2 * PI) * gear_ratio;
-
-  // Serial.println("set_angle " + String(odrive_number) + ": " + String(theta_deg) + " - " + String(vel));
-  // Serial.println("theta: " + String(theta_deg));
-  // Serial.println("zero_offset: " + String(zero_offset_deg));
-  // Serial.println("horizontal_offset: " + String(horizontal_offset_deg));
-  // Serial.println("real_theta_deg: " + String(real_theta_deg));
-  // Serial.println("real_theta_rad: " + String(real_theta_rad));
-  // char value_buffer[20];
-  // dtostrf(real_theta_rounds, 1, 3, value_buffer);
-  // Serial.println("set_angle: " + String(value_buffer) + " || vel: " + String(vel));
-  // Serial.println("real_theta_rounds: " + String(real_theta_rounds * gear_ratio));
 
   // TODO: Find out if we can se velocity using `q` (https://docs.odriverobotics.com/v/latest/ascii-protocol.html#motor-position) or figure out what feed-forward is
   // Set the motor angle
