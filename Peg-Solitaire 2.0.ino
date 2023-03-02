@@ -2,8 +2,8 @@
 // Startup sequence
 ////////////////////////////////
 // 1. Detach arms from biceps, move biceps to vertical position and run `calibrate_drives()` to calibrate all drives
-// 2. Attach zeroing device to board, attach arms to biceps, move end-effector onto zero-device and run `zero_drives()` to zero all drives.
-// 3. Move end-effector up, detach zeroing device from board, and run `set_drives_closed_loop_control()`. You're ready to go!
+// 2. Attach zeroing device to board, attach arms to biceps, move end-effector onto zero-device and run `zero_drives()` to zero all drives. Run `get_position()` to make sure it's correct. Position should be (0, 0, -250).
+// 3. Move end-effector up, detach zeroing device from board, and run `initialize_drives()`. You're ready to go!
 
 ////////////////////////////////
 // Main commands (all available commands can be found in the `loop()` function).
@@ -63,12 +63,25 @@ const double r_u = 220.0;                     // Forearm length (mm) (re)
 const double l_m = 138.57;                    // End effector length (mm) (e)
 const int gear_ratio = 8;                     // Gear ratio
 const float horizontal_offset_angle = -63.2;  // Angle of the horizontal offset
+const float x_max = 115;
+const float x_min = -115;
+const float y_max = 115;
+const float y_min = -115;
+const float z_max = -160;
+const float z_min = -250;
 
 // Trajectory parameters
-const float time_step_delta = 1.0; // Decide which timesteps to divide the trajectory into
-const float max_vel = 20.0; // Max motor velocity (rounds/s)
-const float max_acc = 0.5;  // Max motor acceleration (rounds/s^2)
-const float max_dec = 0.5;  // Max motor deceleration (rounds/s^2) (should be positive)
+// NOTE: To get a trajectory that isn't out of control, velocity and acceleration should be close to each other
+const float throttle_factor = 0.01;  // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
+const float time_step_delta = 0.1; // Decide which timesteps to divide the trajectory into
+const float max_vel = 60.0 * throttle_factor; // Max motor velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
+const float max_acc = 60.0 * throttle_factor; // Max motor acceleration (rounds/s^2)
+const float max_dec = 60.0 * throttle_factor; // Max motor deceleration (rounds/s^2) (should be positive)
+
+// Set current position of end effector
+double current_position[3] = {
+  -1.0, -1.0, -1.0
+};
 
 void setup() {
   // ODrive uses 115200 baud
@@ -118,26 +131,33 @@ void loop() {
     extract_parameters(parameter_string, params, num_params); // extract the parameters from the input string
     Serial << "Running " << function_name << "...\n";
 
-    if (function_name == "calibrate_drive") {
+    if (function_name == "calibrate_drives") {
+      calibrate_drives();
+    } else if (function_name == "calibrate_drive") {
       int odrive_number = round(params[0]);
       calibrate_drive(odrive_number);
-    } else if (function_name == "calibrate_drives") {
-      calibrate_drives();
-    } else if (function_name == "set_drives_idle") {
-      set_drives_idle();
-    } else if (function_name == "set_drives_closed_loop_control") {
-      set_drives_closed_loop_control();
     } else if (function_name == "zero_drives") {
       zero_drives();
+    } else if (function_name == "initialize_drives") {
+      initialize_drives();
+    } else if (function_name == "set_drives_idle") {
+      set_drives_idle();
     } else if (function_name == "get_status") {
       get_status();
     } else if (function_name == "get_position") {
       get_position();
+    } else if (function_name == "get_angles") {
+      get_angles();
     } else if (function_name == "move_to_position") {
       double x = params[0];
       double y = params[1];
       double z = params[2];
       move_to_position(x, y, z);
+    } else if (function_name == "set_position") {
+      double x = params[0];
+      double y = params[1];
+      double z = params[2];
+      set_position(x, y, z);
     } else if (function_name == "set_angle") {
       int odrive_number = round(params[0]);
       double theta = params[1];
@@ -147,5 +167,10 @@ void loop() {
     }
 
     Serial << "Finished " << function_name << "...\n\n";
+  }
+
+  // Set position of end-effector if current position is set
+  if (current_position[0] != -1.0 && current_position[1] != -1.0 && current_position[2] != -1.0) {
+    set_position(current_position[0], current_position[1], current_position[2]);
   }
 }

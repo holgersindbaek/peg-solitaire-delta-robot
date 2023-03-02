@@ -10,14 +10,16 @@
   extern ODriveArduino odrive_array[];
   extern HardwareSerial *odrive_serial_array[];
   extern double zero_offset_array[];
+  extern const float horizontal_offset_angle;
   extern const int gear_ratio;
 
   void get_status(String value = "pos_rel");
   void get_position();
+  void get_angles();
   void calibrate_drive(int odrive_number);
   void calibrate_drives();
-  void set_drives_idle();
-  void set_drives_closed_loop_control();
   void zero_drives();
+  void initialize_drives();
+  void set_drives_idle();
 
 #endif
