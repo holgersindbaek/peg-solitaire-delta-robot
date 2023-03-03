@@ -62,6 +62,11 @@ double zero_offset_array[3] = {
   0.0, 0.0, 0.0
 };
 
+// Set current position of end effector
+double current_position[3] = {
+  -1.0, -1.0, -1.0
+};
+
 // Robot parameters. Definitions are as follows: https://imgur.com/a/edboVco.
 const double l_s = 554.27;                    // Base radius (mm) (f)
 const double r_o = 160.0;                     // Bicep length (mm) (rf)
@@ -87,11 +92,6 @@ const float time_step_delta = 0.1; // Decide which timesteps to divide the traje
 const float max_vel = 60.0 * throttle_factor; // Max motor velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
 const float max_acc = 60.0 * throttle_factor; // Max motor acceleration (rounds/s^2)
 const float max_dec = 60.0 * throttle_factor; // Max motor deceleration (rounds/s^2) (should be positive)
-
-// Set current position of end effector
-double current_position[3] = {
-  -1.0, -1.0, -1.0
-};
 
 void setup() {
   // ODrive uses 115200 baud
@@ -181,7 +181,7 @@ void loop() {
       set_suction_state(state);
     } else if (function_name == "play_winning_peg_solitaire") {
       play_winning_peg_solitaire();
-    }  else if (function_name == "play_random_peg_solitaire") {
+    } else if (function_name == "play_random_peg_solitaire") {
       play_random_peg_solitaire();
     }
 

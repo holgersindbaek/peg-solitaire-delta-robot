@@ -81,7 +81,6 @@ void move_to_position(double x, double y, double z) {
 
   // Move the motors along trajectory until the end position is reached
   float max_step_distance = distances[max_distance_index] / max_steps;
-  Serial.println("max_step_distance: " + String(max_step_distance));
   long current_step = 0;
   do {
     float current_points[3];
@@ -146,6 +145,8 @@ void set_position(double x, double y, double z, double vel_x = max_vel, double v
 }
 
 void set_angle(int odrive_number, double theta_deg, double vel = max_vel) {
+  // Serial.println("set_angle odrive_number: " + String(odrive_number) + " || theta_deg: " + String(theta_deg) + " || vel: " + String(vel));
+
   // Make sure that vel isn't 0 which defaults to ODrive's max vel
   vel = max(vel, max_vel / 10);
 
