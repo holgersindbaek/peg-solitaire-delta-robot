@@ -10,12 +10,12 @@ int count_occurrences(String str, char target) {
   return count;
 }
 
-void extract_parameters(String input_string, double* params, int num_params) {
+void extract_parameters(String input_string, float* params, int num_params) {
   int start = 0;
   int end = input_string.indexOf(',');
   int index = 0;
   while (index < num_params - 1 && end != -1) {
-    params[index] = atof(input_string.substring(start, end).c_str()); // Extract the parameter and convert it to a double
+    params[index] = atof(input_string.substring(start, end).c_str()); // Extract the parameter and convert it to a float
     start = end + 1;
     end = input_string.indexOf(',', start);
     index++;
@@ -23,13 +23,13 @@ void extract_parameters(String input_string, double* params, int num_params) {
   params[index] = atof(input_string.substring(start).c_str()); // Extract the last parameter
 }
 
-void EEPROM_set_double(int address, double value) {
+void EEPROM_set_float(int address, float value) {
   for(byte i = 0; i < sizeof(value); i++){
     EEPROM.write(address + i, reinterpret_cast<byte *>(&value)[i]);
   }
 }
 
-void EEPROM_get_double(int address, double &value) {
+void EEPROM_get_float(int address, float &value) {
   for(byte i = 0; i < sizeof(value); i++){
     reinterpret_cast<byte*>(&value)[i]=EEPROM.read(address+i);
   }

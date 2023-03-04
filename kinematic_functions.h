@@ -6,12 +6,12 @@
 #include "trajectory_functions.h"
 
   extern ODriveArduino odrive_array[];
-  extern double zero_offset_array[];
-  extern double current_position[];
-  extern const double l_s;
-  extern const double r_o;
-  extern const double r_u;
-  extern const double l_m;
+  extern float zero_offset_array[];
+  extern float current_position[];
+  extern const float l_s;
+  extern const float r_o;
+  extern const float r_u;
+  extern const float l_m;
   extern const int gear_ratio;
   extern const float horizontal_offset_angle;
   extern const float x_max;
@@ -21,13 +21,16 @@
   extern const float z_max;
   extern const float z_min;
   extern const float time_step_delta;
-  extern const float max_vel;
+  extern const float max_theta_vel;
+  extern const float min_angle;
+  extern const float max_angle;
+  extern const float max_traj_vel;
 
-  void move_to_position(double x, double y, double z);
-  void set_position(double x, double y, double z, double vel_x = max_vel, double vel_y = max_vel, double vel_z = max_vel);
-  void set_angle(int odrive_number, double theta_deg, double vel = max_vel);
-  void calculate_motor_angles(double x, double y, double z, double &theta_deg_1, double &theta_deg_2, double &theta_deg_3);
-  void calculate_motor_angle(double x0, double y0, double z0, double &theta_deg);
+  void move_to_position(float x, float y, float z);
+  void set_position(float x, float y, float z, float vel_x = max_traj_vel, float vel_y = max_traj_vel, float vel_z = max_traj_vel);
+  void set_angle(int odrive_number, float theta_deg, float vel = max_theta_vel);
+  void calculate_motor_angles(float x, float y, float z, float &theta_deg_1, float &theta_deg_2, float &theta_deg_3);
+  void calculate_motor_angle(float x0, float y0, float z0, float &theta_deg);
   void calculate_motor_position(float theta_rounds[3], float coordinates[3]);
 
 #endif

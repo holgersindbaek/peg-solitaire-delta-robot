@@ -56,11 +56,11 @@ void get_angles() {
   String valuesString = String("| Theta (deg)      ").substring(0, 11);
 
   for (int index = 0; index < 3; index++) {
-    double zero_offset_deg = zero_offset_array[index];
-    double horizontal_offset_deg = horizontal_offset_angle + zero_offset_deg;
-    double theta_rad = theta_rounds[index] * (2 * PI) / gear_ratio;
-    double theta_deg = theta_rad * 180 / PI;
-    double real_theta_deg = abs(horizontal_offset_deg) + theta_deg;
+    float zero_offset_deg = zero_offset_array[index];
+    float horizontal_offset_deg = horizontal_offset_angle + zero_offset_deg;
+    float theta_rad = theta_rounds[index] * (2 * PI) / gear_ratio;
+    float theta_deg = theta_rad * 180 / PI;
+    float real_theta_deg = abs(horizontal_offset_deg) + theta_deg;
 
     char real_theta_deg_buffer[20];
     dtostrf(real_theta_deg, 1, 3, real_theta_deg_buffer);
@@ -110,15 +110,15 @@ void zero_drives() {
     delay(500);
 
     // Convert position to degrees with gear radius
-    double pos_rounds = rel_pos / gear_ratio;
-    double pos_rad = pos_rounds * 2 * PI;
-    double pos_deg = (pos_rad * 180) / PI;
+    float pos_rounds = rel_pos / gear_ratio;
+    float pos_rad = pos_rounds * 2 * PI;
+    float pos_deg = (pos_rad * 180) / PI;
 
     // Save offset to array
     zero_offset_array[drive_index] = pos_deg;
 
     // Save offset to Arduino EEPROM
-    EEPROM_set_double(drive_index * 100, pos_deg);
+    EEPROM_set_float(drive_index * 100, pos_deg);
 
     Serial.println("ODrive " + String(drive_index + 1) + " zero position: " + String(pos_deg) + " degrees (" + String(rel_pos) + " counts)");
   }

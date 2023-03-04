@@ -1,14 +1,14 @@
 #include "trajectory_functions.h"
 
-void get_traj(float start_points[3], double end_points[3], TrajValues traj_values[3], double distance_ratios[3]) {
+void get_traj(float start_points[3], float end_points[3], TrajValues traj_values[3], float distance_ratios[3]) {
   for (int i = 0; i < 3; i++) {
     TrajValues &traj_value = traj_values[i];
     traj_value.start_point = start_points[i];
     traj_value.end_point = end_points[i];
-    traj_value.vel = 0.0; // Starting velocity
-    traj_value.max_vel = max_vel * distance_ratios[i];
-    traj_value.max_acc = max_acc * distance_ratios[i];
-    traj_value.max_dec = max_dec * distance_ratios[i];
+    traj_value.start_vel = 0.0; // Starting velocity
+    traj_value.max_vel = max_traj_vel * distance_ratios[i];
+    traj_value.max_acc = max_traj_acc * distance_ratios[i];
+    traj_value.max_dec = max_traj_dec * distance_ratios[i];
     traj_value.acc_time_step = 0.0;
     traj_value.vel_time_step = 0.0;
     traj_value.complete_time_step = 0.0;
@@ -21,7 +21,7 @@ void get_traj(float start_points[3], double end_points[3], TrajValues traj_value
     // Serial.println("traj_value.start_point: " + String(traj_value.start_point));
     // Serial.println("traj_value.end_point: " + String(traj_value.end_point));
 
-    get_trapezoidal_traj(traj_value.start_point, traj_value.end_point, traj_value.vel, traj_value.max_vel, traj_value.max_acc, traj_value.max_dec, traj_value.acc_time_step, traj_value.vel_time_step, traj_value.complete_time_step, traj_value.max_acc_signed, traj_value.max_vel_signed, traj_value.max_dec_signed, traj_value.y_acc);
+    get_trapezoidal_traj(traj_value.start_point, traj_value.end_point, traj_value.start_vel, traj_value.max_vel, traj_value.max_acc, traj_value.max_dec, traj_value.acc_time_step, traj_value.vel_time_step, traj_value.complete_time_step, traj_value.max_acc_signed, traj_value.max_vel_signed, traj_value.max_dec_signed, traj_value.y_acc);
   }
 }
 
@@ -32,9 +32,10 @@ void get_traj(float start_points[3], double end_points[3], TrajValues traj_value
 // sign                                               Direction (sign) of the trajectory
 // max_vel, max_acc, max_dec                          Kinematic bounds
 // max_acc_signed, max_dec_signed and max_vel_signed  Reached values of acceleration and velocity
-void get_trapezoidal_traj(float start_point, float end_point, float vel, float max_vel, float max_acc, float max_dec, float &acc_time_step_, float &vel_time_step_, float &complete_time_step_, float &max_acc_signed_, float &max_vel_signed_, float &max_dec_signed_, float &y_acc_) {
+void get_trapezoidal_traj(float start_point, float end_point, float start_vel, float max_vel, float max_acc, float max_dec, float &acc_time_step_, float &vel_time_step_, float &complete_time_step_, float &max_acc_signed_, float &max_vel_signed_, float &max_dec_signed_, float &y_acc_)
+{
   float delta_dis = end_point - start_point; // Distance to travel
-  float stop_dist = (vel * vel) / (2.0f * max_dec); // Minimum stopping distance
+  float stop_dist = (start_vel * start_vel) / (2.0f * max_dec); // Minimum stopping distance
   float delta_dis_stop = ((delta_dis < 0) ? -1 : 1) * stop_dist; // Minimum stopping displacement
   float sign = ((delta_dis - delta_dis_stop < 0) ? -1 : 1); // Sign of coast velocity (if any)
   float max_acc_signed = sign * max_acc; // Maximum Acceleration (signed)
@@ -46,24 +47,24 @@ void get_trapezoidal_traj(float start_point, float end_point, float vel, float m
   float dec_time_step;
 
   // If we start with a speed faster than cruising, then we need to decel instead of accel
-  // aka "double deceleration move" in the paper
-  if ((sign * vel) > (sign * max_vel_signed)) {
+  // aka "float deceleration move" in the paper
+  if ((sign * start_vel) > (sign * max_vel_signed)) {
     max_acc_signed = -sign * max_acc;
   }
 
-  // Time to accel/decel to/from Vr (cruise speed)
-  acc_time_step = (max_vel_signed - vel) / max_acc_signed;
+  // Time to accel/decel to/from max_vel_signed (cruise speed)
+  acc_time_step = (max_vel_signed - start_vel) / max_acc_signed;
   dec_time_step = -max_vel_signed / max_dec_signed;
 
   // Integral of velocity ramps over the full accel and decel times to get
   // minimum displacement required to reach cuising speed
-  float delta_dis_min = 0.5f * acc_time_step * (max_vel_signed + vel) + 0.5f * dec_time_step * max_vel_signed;
+  float delta_dis_min = 0.5f * acc_time_step * (max_vel_signed + start_vel) + 0.5f * dec_time_step * max_vel_signed;
 
   // Are we displacing enough to reach cruising speed?
   if (sign * delta_dis < sign * delta_dis_min) {
     // Short move (triangle profile)
     max_vel_signed = sign * sqrt(max((max_dec_signed * max_vel_signed * max_vel_signed + 2 * max_acc_signed * max_dec_signed * delta_dis) / (max_dec_signed - max_acc_signed), 0.0f));
-    acc_time_step = max(0.0f, (max_vel_signed - vel) / max_acc_signed);
+    acc_time_step = max(0.0f, (max_vel_signed - start_vel) / max_acc_signed);
     dec_time_step = max(0.0f, -max_vel_signed / max_dec_signed);
     vel_time_step = 0.0f;
   } else {
@@ -73,7 +74,7 @@ void get_trapezoidal_traj(float start_point, float end_point, float vel, float m
 
   // Fill in the rest of the values used at evaluation-time
   float complete_time_step = acc_time_step + vel_time_step + dec_time_step;
-  float y_acc = start_point + vel * acc_time_step + 0.5f * max_acc_signed * pow(acc_time_step, 2); // pos at end of accel phase
+  float y_acc = start_point + start_vel * acc_time_step + 0.5f * max_acc_signed * pow(acc_time_step, 2); // pos at end of accel phase
 
   acc_time_step_ = acc_time_step;
   vel_time_step_ = vel_time_step;

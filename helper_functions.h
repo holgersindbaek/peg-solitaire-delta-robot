@@ -4,9 +4,9 @@
 #include <EEPROM.h>
 
   int count_occurrences(String str, char target);
-  void extract_parameters(String input_string, double* params, int num_params);
-  void EEPROM_set_double(int address, double value);
-  void EEPROM_get_double(int address, double& value);
+  void extract_parameters(String input_string, float* params, int num_params);
+  void EEPROM_set_float(int address, float value);
+  void EEPROM_get_float(int address, float& value);
   String readSerialString(HardwareSerial serial);
 
 #endif

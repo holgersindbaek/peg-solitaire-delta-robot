@@ -58,23 +58,23 @@ ODriveArduino odrive_array[3] = {
 };
 
 // Zero offsets
-double zero_offset_array[3] = {
+float zero_offset_array[3] = {
   0.0, 0.0, 0.0
 };
 
 // Set current position of end effector
-double current_position[3] = {
+float current_position[3] = {
   -1.0, -1.0, -1.0
 };
 
 // Robot parameters. Definitions are as follows: https://imgur.com/a/edboVco.
-const double l_s = 554.27;                    // Base radius (mm) (f)
-const double r_o = 160.0;                     // Bicep length (mm) (rf)
-const double r_u = 220.0;                     // Forearm length (mm) (re)
-const double l_m = 138.57;                    // End effector length (mm) (e)
-const int gear_ratio = 8;                     // Gear ratio
-const float horizontal_offset_angle = -63.2;  // Angle of the horizontal offset
-const float x_max = 115;                      // Boundaries of the workspace
+const float l_s = 554.27;                    // Base radius (mm) (f)
+const float r_o = 160.0;                     // Bicep length (mm) (rf)
+const float r_u = 220.0;                     // Forearm length (mm) (re)
+const float l_m = 138.57;                    // End effector length (mm) (e)
+const int gear_ratio = 8;                    // Gear ratio
+const float horizontal_offset_angle = -63.2; // Angle of the horizontal offset
+const float x_max = 115;                     // Boundaries of the workspace
 const float x_min = -115;
 const float y_max = 115;
 const float y_min = -115;
@@ -84,14 +84,17 @@ const float z_zero = -250;                   // Position of y when end-effector 
 const float board_top_offset = -3;           // Offset from top of board to zero (mm)
 const float suction_bottom_offset = 20;      // Offset for bottom of suction cup (mm)
 const float suction_grab_offset = 14;        // Offset for making suction cub grab (mm)
+const float min_angle = 0.0;                 // Min and max angles for the robot
+const float max_angle = 115.0;
+const float max_theta_vel = 1.0;             // Max motor velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
 
 // Trajectory parameters
 // NOTE: To get a trajectory that isn't out of control, velocity and acceleration should be close to each other
-const float throttle_factor = 0.1;  // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
+const float throttle_factor = 1.0; // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
 const float time_step_delta = 0.1; // Decide which timesteps to divide the trajectory into
-const float max_vel = 60.0 * throttle_factor; // Max motor velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
-const float max_acc = 60.0 * throttle_factor; // Max motor acceleration (rounds/s^2)
-const float max_dec = 60.0 * throttle_factor; // Max motor deceleration (rounds/s^2) (should be positive)
+const float max_traj_vel = 10.0 * throttle_factor; // Max trajectory velocity (mm/s)
+const float max_traj_acc = 2.5 * throttle_factor;   // Max motor acceleration (mm/s^2)
+const float max_traj_dec = 2.5 * throttle_factor;   // Max motor deceleration (mm/s^2) (should be positive)
 
 void setup() {
   // ODrive uses 115200 baud
@@ -109,15 +112,15 @@ void setup() {
 
   // Load zero offsets from EEPROM
   for (int drive_index = 0; drive_index < 3; drive_index++) {
-    double value;
-    EEPROM_get_double(drive_index * 100, value);
+    float value;
+    EEPROM_get_float(drive_index * 100, value);
     zero_offset_array[drive_index] = value;
     Serial.println("Loaded zero offset for drive " + String(drive_index) + ": " + String(value));
   }
 
   // Set parameters for ODrives
   for (int drive_index = 0; drive_index < 3; ++drive_index) {
-    odrive_serial_array[drive_index]->println("w axis0.controller.config.vel_limit " + String(max_vel));
+    odrive_serial_array[drive_index]->println("w axis0.controller.config.vel_limit " + String(max_theta_vel));
     odrive_serial_array[drive_index]->println("w axis0.controller.config.vel_limit_tolerance " + String(2.0)); // 20% tolerance (overshot)
   }
 
@@ -141,7 +144,7 @@ void loop() {
     String function_name = input.substring(0, input.indexOf('('));
     String parameter_string = input.substring(input.indexOf('(') + 1, input.indexOf(')'));
     int num_params = count_occurrences(parameter_string, ',') + 1;  // count the number of parameters in the input string
-    double params[num_params]; // create an array to store the parameters
+    float params[num_params]; // create an array to store the parameters
     extract_parameters(parameter_string, params, num_params); // extract the parameters from the input string
     Serial << "Running " << function_name << "...\n";
 
@@ -163,18 +166,18 @@ void loop() {
     } else if (function_name == "get_angles") {
       get_angles();
     } else if (function_name == "move_to_position") {
-      double x = params[0];
-      double y = params[1];
-      double z = params[2];
+      float x = params[0];
+      float y = params[1];
+      float z = params[2];
       move_to_position(x, y, z);
     } else if (function_name == "set_position") {
-      double x = params[0];
-      double y = params[1];
-      double z = params[2];
+      float x = params[0];
+      float y = params[1];
+      float z = params[2];
       set_position(x, y, z);
     } else if (function_name == "set_angle") {
       int odrive_number = round(params[0]);
-      double theta = params[1];
+      float theta = params[1];
       set_angle(odrive_number, theta);
     } else if (function_name == "set_suction_state") {
       int state = params[0];
