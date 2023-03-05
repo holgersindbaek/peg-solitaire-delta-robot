@@ -24,12 +24,12 @@
   extern const float max_theta_vel;
   extern const float min_angle;
   extern const float max_angle;
-  extern const float max_traj_vel;
+  extern const float max_theta_vel;
 
   void move_to_position(float x, float y, float z);
-  void set_position(float x, float y, float z, float vel_x = max_traj_vel, float vel_y = max_traj_vel, float vel_z = max_traj_vel);
+  void set_position(float x, float y, float z, float vel_x = max_theta_vel, float vel_y = max_theta_vel, float vel_z = max_theta_vel);
   void set_angle(int odrive_number, float theta_deg, float vel = max_theta_vel);
-  void calculate_motor_angles(float x, float y, float z, float &theta_deg_1, float &theta_deg_2, float &theta_deg_3);
+  void calculate_motor_angles(float x, float y, float z, float theta_degs[3]);
   void calculate_motor_angle(float x0, float y0, float z0, float &theta_deg);
   void calculate_motor_position(float theta_rounds[3], float coordinates[3]);
 

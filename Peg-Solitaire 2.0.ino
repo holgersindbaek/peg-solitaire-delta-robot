@@ -84,17 +84,16 @@ const float z_zero = -250;                   // Position of y when end-effector 
 const float board_top_offset = -3;           // Offset from top of board to zero (mm)
 const float suction_bottom_offset = 20;      // Offset for bottom of suction cup (mm)
 const float suction_grab_offset = 14;        // Offset for making suction cub grab (mm)
-const float min_angle = 0.0;                 // Min and max angles for the robot
-const float max_angle = 115.0;
-const float max_theta_vel = 1.0;             // Max motor velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
+const float min_angle_deg = 0.0;             // Min and max angles for the robot
+const float max_angle_deg = 115.0;
 
 // Trajectory parameters
 // NOTE: To get a trajectory that isn't out of control, velocity and acceleration should be close to each other
-const float throttle_factor = 1.0; // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
-const float time_step_delta = 0.1; // Decide which timesteps to divide the trajectory into
-const float max_traj_vel = 10.0 * throttle_factor; // Max trajectory velocity (mm/s)
-const float max_traj_acc = 2.5 * throttle_factor;   // Max motor acceleration (mm/s^2)
-const float max_traj_dec = 2.5 * throttle_factor;   // Max motor deceleration (mm/s^2) (should be positive)
+const float throttle_factor = 1.0;                    // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
+const float time_step_delta = 0.01;                   // Decide which timesteps to divide the trajectory into (s)
+const float max_deg_vel = 1.0 * throttle_factor;    // Max trajectory velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
+const float max_deg_acc = 4.0 * throttle_factor;    // Max motor acceleration (rounds/s^2)
+const float max_deg_dec = 4.0 * throttle_factor;    // Max motor deceleration (rounds/s^2) (should be positive)
 
 void setup() {
   // ODrive uses 115200 baud
@@ -191,8 +190,8 @@ void loop() {
     Serial << "Finished " << function_name << "...\n\n";
   }
 
-  // Set position of end-effector if current position is set
-  if (current_position[0] != -1.0 && current_position[1] != -1.0 && current_position[2] != -1.0) {
-    set_position(current_position[0], current_position[1], current_position[2]);
-  }
+  // // Set position of end-effector if current position is set
+  // if (current_position[0] != -1.0 && current_position[1] != -1.0 && current_position[2] != -1.0) {
+  //   set_position(current_position[0], current_position[1], current_position[2]);
+  // }
 }
