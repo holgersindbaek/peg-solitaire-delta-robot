@@ -1,14 +1,14 @@
 #include "trajectory_functions.h"
 
-void get_traj(float start_degs[3], float end_degs[3], float max_deg_traj_vel, float max_deg_traj_acc, float distance_ratios[3], TrajValues traj_values[3]) {
+void get_traj(float start_degs[3], float end_degs[3], float max_deg_traj_vel[3], float max_deg_traj_acc[3], TrajValues traj_values[3]) {
   for (int i = 0; i < 3; i++) {
     TrajValues &traj_value = traj_values[i];
     traj_value.start_deg = start_degs[i];
     traj_value.end_deg = end_degs[i];
     traj_value.start_vel = 0.0; // Starting velocity
-    traj_value.max_vel = max_deg_traj_vel * distance_ratios[i];
-    traj_value.max_acc = max_deg_traj_acc * distance_ratios[i];
-    traj_value.max_dec = max_deg_traj_acc * distance_ratios[i];
+    traj_value.max_vel = max_deg_traj_vel[i];
+    traj_value.max_acc = max_deg_traj_acc[i];
+    traj_value.max_dec = max_deg_traj_acc[i];
     traj_value.acc_time_step = 0.0;
     traj_value.vel_time_step = 0.0;
     traj_value.complete_time_step = 0.0;
