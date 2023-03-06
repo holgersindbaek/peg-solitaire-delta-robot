@@ -6,6 +6,7 @@
 #include "trajectory_functions.h"
 
   extern ODriveArduino odrive_array[];
+  extern HardwareSerial *odrive_serial_array[];
   extern float zero_offset_array[];
   extern float last_thetas[];
   extern const float l_s;
