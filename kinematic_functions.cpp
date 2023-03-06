@@ -45,7 +45,7 @@ void move_to_position(float x, float y, float z) {
 
   // Calculate the max acceleration and velocity so the motor reached max velocity at 1/4 the distance
   // https://sciencing.com/acceleration-velocity-distance-7779124.html
-  float max_deg_traj_acc_distance = max_distance / 4;
+  float max_deg_traj_acc_distance = max_distance * 0.1;
   float max_deg_traj_acc;
   float max_deg_traj_vel;
   for (int max_deg_vel_index = max_deg_vel; max_deg_vel_index > 0; max_deg_vel_index--) {

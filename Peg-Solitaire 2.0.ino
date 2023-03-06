@@ -88,7 +88,7 @@ const float max_angle_deg = 115.0;
 // Trajectory parameters
 // NOTE: To get a trajectory that isn't out of control, velocity and acceleration should be close to each other
 const float throttle_factor = 0.1;                    // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
-const float time_step_delta = 0.01;                   // Decide which timesteps to divide the trajectory into (s)
+const float time_step_delta = 0.1;                   // Decide which timesteps to divide the trajectory into (s)
 const float max_motor_vel = 8.0 * throttle_factor;    // Max trajectory velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
 const float max_motor_acc = 8.0 * throttle_factor;    // Max motor acceleration (rounds/s^2)
 const float max_motor_dec = 8.0 * throttle_factor;    // Max motor deceleration (rounds/s^2) (should be positive)
