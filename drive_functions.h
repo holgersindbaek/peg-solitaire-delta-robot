@@ -16,10 +16,12 @@
   void get_status(String value = "pos_rel");
   void get_position();
   void get_angles();
+  void save_angles();
   void calibrate_drive(int odrive_number);
   void calibrate_drives();
   void zero_drives();
   void initialize_drives();
   void set_drives_idle();
+  void run_complete_calibration_sequence();
 
 #endif

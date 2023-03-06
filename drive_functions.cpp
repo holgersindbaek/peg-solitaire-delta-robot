@@ -71,11 +71,25 @@ void get_angles() {
   Serial.println("+----------+----------+----------+----------+");
 }
 
+// HACK: ODrive doesn't always return correct theta, so we save the last known theta
+void save_angles() {
+  float start_thetas[3] = {odrive_array[0].GetPosition(0), odrive_array[1].GetPosition(0), odrive_array[2].GetPosition(0)};
+  float coordinates[3];
+  calculate_motor_position(start_thetas, coordinates);
+
+  for (int index = 0; index < 3; index++) {
+    last_thetas[index] = start_thetas[index];
+  }
+
+  Serial.println("Motor angles saved for position: (" + String(coordinates[0]) + ", " + String(coordinates[1]) + ", " + String(coordinates[2]) + ")");
+}
+
 void calibrate_drives() {
   for (int index = 0; index < 3; index++) {
     calibrate_drive(index + 1);
-    delay(5000);
   }
+
+  delay(10000); // Wait for drives to calibrate
 }
 
 void calibrate_drive(int odrive_number) {
@@ -102,12 +116,16 @@ void calibrate_drive(int odrive_number) {
 }
 
 void zero_drives() {
-  for (int drive_index = 0; drive_index < 3; drive_index++) {
-    delay(500);
+  // HACK: The function `GetPosition` doesn't return the correct value until after it's been called twice
+  for (int i = 0; i < 3; i++) {
+    for (int drive_index = 0; drive_index < 3; drive_index++) {
+      odrive_array[drive_index].GetPosition(0);
+    }
+  }
 
+  for (int drive_index = 0; drive_index < 3; drive_index++) {
     // Grab relative position from encoder
     float rel_pos = odrive_array[drive_index].GetPosition(0);
-    delay(500);
 
     // Convert position to degrees with gear radius
     float pos_rounds = rel_pos / gear_ratio;
@@ -122,6 +140,8 @@ void zero_drives() {
 
     Serial.println("ODrive " + String(drive_index + 1) + " zero position: " + String(pos_deg) + " degrees (" + String(rel_pos) + " counts)");
   }
+
+  save_angles();
 }
 
 void initialize_drives() {
@@ -130,13 +150,6 @@ void initialize_drives() {
     if (!odrive_array[drive_index].run_state(0, AXIS_STATE_CLOSED_LOOP_CONTROL, false, 25.0f)) {
       Serial.println("Failed");
       return;
-    }
-  }
-
-  // HACK: The function `GetPosition` doesn't return the correct value until after it's been called twice
-  for (int i = 0; i < 3; i++) {
-    for (int drive_index = 0; drive_index < 3; drive_index++) {
-      odrive_array[drive_index].GetPosition(0);
     }
   }
 }
@@ -149,4 +162,12 @@ void set_drives_idle() {
       return;
     }
   }
+}
+
+void run_complete_calibration_sequence() {
+  calibrate_drives();
+  delay(1000);
+  zero_drives();
+  delay(1000);
+  initialize_drives();
 }

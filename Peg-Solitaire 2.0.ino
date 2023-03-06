@@ -62,10 +62,8 @@ float zero_offset_array[3] = {
   0.0, 0.0, 0.0
 };
 
-// Set current position of end effector
-float current_position[3] = {
-  -1.0, -1.0, -1.0
-};
+// HACK: ODrive doesn't always return the correct position, so save the last known position the motors
+float last_thetas[3] = {NAN, NAN, NAN};
 
 // Robot parameters. Definitions are as follows: https://imgur.com/a/edboVco.
 const float l_s = 554.27;                    // Base radius (mm) (f)
@@ -91,9 +89,12 @@ const float max_angle_deg = 115.0;
 // NOTE: To get a trajectory that isn't out of control, velocity and acceleration should be close to each other
 const float throttle_factor = 1.0;                    // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
 const float time_step_delta = 0.01;                   // Decide which timesteps to divide the trajectory into (s)
-const float max_deg_vel = 1.0 * throttle_factor;    // Max trajectory velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
-const float max_deg_acc = 4.0 * throttle_factor;    // Max motor acceleration (rounds/s^2)
-const float max_deg_dec = 4.0 * throttle_factor;    // Max motor deceleration (rounds/s^2) (should be positive)
+const float max_motor_vel = 8.0 * throttle_factor;    // Max trajectory velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
+const float max_motor_acc = 8.0 * throttle_factor;    // Max motor acceleration (rounds/s^2)
+const float max_motor_dec = 8.0 * throttle_factor;    // Max motor deceleration (rounds/s^2) (should be positive)
+const float max_deg_vel = (max_motor_vel * 360) / gear_ratio;
+const float max_deg_acc = (max_motor_acc * 360) / gear_ratio;
+const float max_deg_dec = (max_motor_dec * 360) / gear_ratio;
 
 void setup() {
   // ODrive uses 115200 baud
@@ -119,8 +120,8 @@ void setup() {
 
   // Set parameters for ODrives
   for (int drive_index = 0; drive_index < 3; ++drive_index) {
-    odrive_serial_array[drive_index]->println("w axis0.controller.config.vel_limit " + String(max_theta_vel));
-    odrive_serial_array[drive_index]->println("w axis0.controller.config.vel_limit_tolerance " + String(2.0)); // 20% tolerance (overshot)
+    odrive_serial_array[drive_index]->println("w axis0.controller.config.vel_limit " + String(max_motor_vel));
+    odrive_serial_array[drive_index]->println("w axis0.controller.config.vel_limit_tolerance " + String(2.0)); // 100%  overshot allowance
   }
 
   // HACK: The function `GetPosition` doesn't return the correct value until after it's been called twice
@@ -134,6 +135,10 @@ void setup() {
   Serial.println("////////////////////////////////");
   Serial.println("// Ready for your commands...");
   Serial.println("////////////////////////////////");
+
+  Serial.println("max_motor_vel " + String(max_motor_vel));
+  Serial.println("max_deg_vel " + String(max_deg_vel));
+  Serial.println("max_deg_acc " + String(max_deg_acc));
 }
 
 void loop() {
@@ -164,6 +169,10 @@ void loop() {
       get_position();
     } else if (function_name == "get_angles") {
       get_angles();
+    } else if (function_name == "save_angles") {
+      save_angles();
+    } else if (function_name == "run_complete_calibration_sequence") {
+      run_complete_calibration_sequence(); // Used for testing purposes
     } else if (function_name == "move_to_position") {
       float x = params[0];
       float y = params[1];

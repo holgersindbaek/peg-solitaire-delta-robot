@@ -2,277 +2,167 @@
 
 // Move the robot to a specified end effector position
 void move_to_position(float x, float y, float z) {
-  float end_points[3] = {x, y, z};
-  float time_step_deltas[3] = {time_step_delta, time_step_delta, time_step_delta};
-  float start_thetas[3] = {odrive_array[0].GetPosition(0), odrive_array[1].GetPosition(0), odrive_array[2].GetPosition(0)};
-  Serial.println("start_thetas: " + String(start_thetas[0]) + ", " + String(start_thetas[1]) + ", " + String(start_thetas[2]));
-
-  // // Calculate start points
-  // float start_points[3];
-  // calculate_motor_position(start_thetas, start_points);
-
-  // Calculate end thetas
-  float end_theta_degs[3];
-  calculate_motor_angles(x, y, z, end_theta_degs);
-  Serial.println("end_theta_degs: " + String(end_theta_degs[0]) + ", " + String(end_theta_degs[1]) + ", " + String(end_theta_degs[2]));
-
-  // Convert end thetas to rounds
-  float end_thetas[3];
+  // Calculate the real start theta degrees
+  float start_thetas[3];
+  float start_degs[3];
   for (int drive_index = 0; drive_index < 3; drive_index++) {
-    end_thetas[drive_index] = (end_theta_degs[drive_index] * PI / 180) / (2 * PI) * gear_ratio;
+    Serial.println("isnan(last_thetas[drive_index]): " + String(isnan(last_thetas[drive_index])));
+    Serial.println("last_thetas[drive_index]: " + String(last_thetas[drive_index]));
+    Serial.println("odrive_array[drive_index].GetPosition(0): " + String(odrive_array[drive_index].GetPosition(0)));
+    if (isnan(last_thetas[drive_index])) {
+      Serial.println("HERE 1");
+      start_thetas[drive_index] = odrive_array[drive_index].GetPosition(0);
+    } else {
+      Serial.println("HERE 2");
+      start_thetas[drive_index] = last_thetas[drive_index];
+    }
+
+    float zero_offset_deg = zero_offset_array[drive_index];
+    float horizontal_offset_deg = horizontal_offset_angle + zero_offset_deg;
+    float theta_rad = start_thetas[drive_index] * (2 * PI) / gear_ratio;
+    float theta_deg = theta_rad * 180 / PI;
+    start_degs[drive_index] = abs(horizontal_offset_deg) + theta_deg;
   }
-  Serial.println("end_thetas: " + String(end_thetas[0]) + ", " + String(end_thetas[1]) + ", " + String(end_thetas[2]));
+
+  Serial.println("start_degs: " + String(start_degs[0]) + ", " + String(start_degs[1]) + ", : " + String(start_degs[2]));
+
+  // Calculate end theta degrees
+  float end_degs[3];
+  calculate_motor_angles(x, y, z, end_degs);
+  Serial.println("end_degs: " + String(end_degs[0]) + ", " + String(end_degs[1]) + ", : " + String(end_degs[2]));
+
+  // Calculate distance between start and end and get max distance
+  float distances[3] = {abs(end_degs[0] - start_degs[0]), abs(end_degs[1] - start_degs[1]), abs(end_degs[2] - start_degs[2])};
+  float max_distance = 0;
+  int max_distance_index = 0;
+  for (int drive_index = 0; drive_index < 3; drive_index++) {
+    Serial.println("distances[drive_index]: " + String(distances[drive_index]));
+    if (distances[drive_index] > max_distance) {
+      max_distance = distances[drive_index];
+      max_distance_index = drive_index;
+    }
+  }
+
+  // Calculate distance ratios
+  float distance_ratios[3] = {1.0, 1.0, 1.0};
+  for (int drive_index = 0; drive_index < 3; drive_index++) {
+    distance_ratios[drive_index] = distances[drive_index] / distances[max_distance_index];
+  }
+
+  // Calculate the max acceleration and velocity so the motor reached max velocity at 1/4 the distance
+  // https://sciencing.com/acceleration-velocity-distance-7779124.html
+  float max_deg_traj_acc_distance = max_distance / 4;
+  float max_deg_traj_acc;
+  float max_deg_traj_vel;
+  for (int max_deg_vel_index = max_deg_vel; max_deg_vel_index > 0; max_deg_vel_index--) {
+    max_deg_traj_acc = pow(max_deg_vel_index, 2) / (2 * max_deg_traj_acc_distance);
+
+    // Serial.println("--");
+    // Serial.println("max_deg_vel_index: " + String(max_deg_vel_index));
+    // Serial.println("max_deg_traj_acc: " + String(max_deg_traj_acc));
+    if (max_deg_traj_acc <= max_deg_acc) {
+      max_deg_traj_vel = max_deg_vel_index;
+      // Serial.println("max_deg_traj_vel: " + String(max_deg_traj_vel));
+      break;
+    }
+  }
+  Serial.println("max_deg_traj_acc_distance: " + String(max_deg_traj_acc_distance));
+  Serial.println("max_deg_traj_acc: " + String(max_deg_traj_acc));
+  Serial.println("max_deg_traj_vel: " + String(max_deg_traj_vel));
 
   // Get the trapezoidal trajectory values for each coordinate
   TrajValues traj_values[3];
-  get_traj(start_thetas, end_thetas, traj_values);
+  get_traj(start_degs, end_degs, max_deg_traj_vel, max_deg_traj_acc, distance_ratios, traj_values);
 
-  // Get the highest step values to make those driving the motors move the same amount of steps
-  long max_complete_time_step = 0;
-  int max_complete_time_index = 0;
-  for (int drive_index = 0; drive_index < 3; drive_index++) {
-    TrajValues traj_value = traj_values[drive_index];
+  // If max steps are less than 3, then just move the motors to the end position
+  long steps = ceilf(traj_values[0].complete_time_step / time_step_delta);
+  if (steps <= 3) {
+    Serial.println("Moving directly to position!");
 
-    if (traj_value.complete_time_step > max_complete_time_step) {
-      max_complete_time_step = traj_value.complete_time_step;
-      max_complete_time_index = drive_index;
-    }
-  }
+    set_angle(1, end_degs[0], 0.0);
+    set_angle(2, end_degs[1], 0.0);
+    set_angle(3, end_degs[2], 0.0);
 
-  // Change the time step deltas to make the motors move the same amount of steps
-  for (int coordinate_index = 0; coordinate_index < 3; coordinate_index++) {
-    TrajValues traj_value = traj_values[coordinate_index];
-
-    time_step_deltas[coordinate_index] = traj_value.complete_time_step / max_complete_time_step * time_step_delta;
+    return;
   }
 
   // Check to see if trajectories are unstable
-  long max_steps = ceil(max_complete_time_step / time_step_delta);
-  float positive_directions[3] = {start_thetas[0] < end_thetas[0], start_thetas[1] < end_thetas[1], start_thetas[2] < end_thetas[2]};
-  float last_thetas[3] = {start_thetas[0], start_thetas[1], start_thetas[2]};
-  for (int step_index = 0; step_index <= max_steps; step_index++) {
+  float positive_directions[3] = {start_degs[0] < end_degs[0], start_degs[1] < end_degs[1], start_degs[2] < end_degs[2]};
+  float prev_degs[3] = {start_degs[0], start_degs[1], start_degs[2]};
+  for (int step_index = 0; step_index <= steps; step_index++) {
     TrajStep traj_step;
     for (int coordinate_index = 0; coordinate_index < 3; coordinate_index++) {
-      float time_step = time_step_deltas[coordinate_index] * step_index;
+      float time_step = time_step_delta * step_index;
       TrajValues traj_value = traj_values[coordinate_index];
 
-      get_traj_step(traj_value.start_theta, traj_value.end_theta, time_step, traj_value.acc_time_step, traj_value.vel_time_step, traj_value.complete_time_step, traj_value.start_vel, traj_value.max_acc_signed, traj_value.max_dec_signed, traj_value.max_vel_signed, traj_value.y_acc, traj_step, coordinate_index);
+      get_traj_step(traj_value.start_deg, traj_value.end_deg, time_step, traj_value.acc_time_step, traj_value.vel_time_step, traj_value.complete_time_step, traj_value.start_vel, traj_value.max_acc_signed, traj_value.max_dec_signed, traj_value.max_vel_signed, traj_value.y_acc, traj_step, coordinate_index);
     }
 
-    // // Print out trajectory step values
-    Serial.println("step_index: " + String(String(step_index) + "      ").substring(0, 3) + " || " + "theta: " + String(traj_step.theta[0]) + " - " + String(traj_step.theta[1]) + " - " + String(traj_step.theta[2]) + " || vel: " + String(traj_step.vel[0]) + " - " + String(traj_step.vel[1]) + " - " + String(traj_step.vel[2]) + " || acc: " + String(traj_step.acc[0]) + " - " + String(traj_step.acc[1]) + " - " + String(traj_step.acc[2]));
+    // Print out trajectory step values
+    float dis[3] = {abs(traj_step.deg[0] - prev_degs[0]), abs(traj_step.deg[1] - prev_degs[1]), abs(traj_step.deg[2] - prev_degs[2])};
+    // Serial.println("step_index: " + String(String(step_index) + "      ").substring(0, 3) + " || " + "deg: " + String(traj_step.deg[0]) + " - " + String(traj_step.deg[1]) + " - " + String(traj_step.deg[2]) + " || vel: " + String(traj_step.vel[0]) + " - " + String(traj_step.vel[1]) + " - " + String(traj_step.vel[2]) + " || acc: " + String(traj_step.acc[0]) + " - " + String(traj_step.acc[1]) + " - " + String(traj_step.acc[2]));
+    Serial.println("step_index: " + String(String(step_index) + "      ").substring(0, 3) + " || " + "dis: " + String(dis[0]) + " - " + String(dis[1]) + " - " + String(dis[2]) + " || vel: " + String(traj_step.vel[0]) + " - " + String(traj_step.vel[1]) + " - " + String(traj_step.vel[2]) + " || acc: " + String(traj_step.acc[0]) + " - " + String(traj_step.acc[1]) + " - " + String(traj_step.acc[2]));
 
-    if (
-      (positive_directions[0] && (traj_step.theta[0] < last_thetas[0] || traj_step.theta[0] > end_thetas[0])) ||
-      (!positive_directions[0] && (traj_step.theta[0] > last_thetas[0] || traj_step.theta[0] < end_thetas[0])) ||
-      (positive_directions[1] && (traj_step.theta[1] < last_thetas[1] || traj_step.theta[1] > end_thetas[1])) ||
-      (!positive_directions[1] && (traj_step.theta[1] > last_thetas[1] || traj_step.theta[1] < end_thetas[1])) ||
-      (positive_directions[2] && (traj_step.theta[2] < last_thetas[2] || traj_step.theta[2] > end_thetas[2])) ||
-      (!positive_directions[2] && (traj_step.theta[2] > last_thetas[2] || traj_step.theta[2] < end_thetas[2])))
-    {
-      Serial.println("Couldn't move along path. Trajectory is unstable. We suggest you change velocity and acceleration values.");
-      return;
-    }
+    // if (
+    //   (positive_directions[0] && (traj_step.deg[0] < prev_degs[0] || traj_step.deg[0] > end_degs[0])) ||
+    //   (!positive_directions[0] && (traj_step.deg[0] > prev_degs[0] || traj_step.deg[0] < end_degs[0])) ||
+    //   (positive_directions[1] && (traj_step.deg[1] < prev_degs[1] || traj_step.deg[1] > end_degs[1])) ||
+    //   (!positive_directions[1] && (traj_step.deg[1] > prev_degs[1] || traj_step.deg[1] < end_degs[1])) ||
+    //   (positive_directions[2] && (traj_step.deg[2] < prev_degs[2] || traj_step.deg[2] > end_degs[2])) ||
+    //   (!positive_directions[2] && (traj_step.deg[2] > prev_degs[2] || traj_step.deg[2] < end_degs[2]))) {
+    //   Serial.println("Couldn't move along path. Trajectory is unstable. We suggest you change velocity and acceleration values.");
+    //   return;
+    // }
 
-    last_thetas[0] = traj_step.theta[0];
-    last_thetas[1] = traj_step.theta[1];
-    last_thetas[2] = traj_step.theta[2];
+    prev_degs[0] = traj_step.deg[0];
+    prev_degs[1] = traj_step.deg[1];
+    prev_degs[2] = traj_step.deg[2];
   }
 
-  // TEMPORARY
-  float max_theta_distance = abs(end_thetas[max_complete_time_index] - start_thetas[max_complete_time_index]);
-  Serial.println("max_theta_distance: " + String(max_theta_distance));
-  Serial.println("max_theta_distance time: " + String(max_theta_distance / max_theta_vel));
+  // Move the motors along the trajectory
+  float calculated_time_to_complete = steps * time_step_delta;
+  Serial.println("steps: " + String(steps));
+  Serial.println("time_step_delta (s): " + String(time_step_delta));
+  Serial.println("calculated_time_to_complete (s): " + String(calculated_time_to_complete));
+  for (int step_index = 0; step_index <= steps; step_index++) {
+    TrajStep traj_step;
+    for (int coordinate_index = 0; coordinate_index < 3; coordinate_index++) {
+      float time_step = time_step_delta * step_index;
+      TrajValues traj_value = traj_values[coordinate_index];
 
-  // // Move the motors along the trajectory
-  // float delay_time = max_complete_time_step / time_step_delta;
-  // Serial.println("delay_time: " + String(delay_time));
-  // for (int step_index = 0; step_index <= max_steps; step_index++) {
-  //   TrajStep traj_step;
-  //   for (int coordinate_index = 0; coordinate_index < 3; coordinate_index++) {
-  //     float time_step = time_step_deltas[coordinate_index] * step_index;
-  //     TrajValues traj_value = traj_values[coordinate_index];
+      get_traj_step(traj_value.start_deg, traj_value.end_deg, time_step, traj_value.acc_time_step, traj_value.vel_time_step, traj_value.complete_time_step, traj_value.start_vel, traj_value.max_acc_signed, traj_value.max_dec_signed, traj_value.max_vel_signed, traj_value.y_acc, traj_step, coordinate_index);
+    }
 
-  //     get_traj_step(traj_value.start_theta, traj_value.end_theta, time_step, traj_value.acc_time_step, traj_value.vel_time_step, traj_value.complete_time_step, traj_value.start_vel, traj_value.max_acc_signed, traj_value.max_dec_signed, traj_value.max_vel_signed, traj_value.y_acc, traj_step, coordinate_index);
-  //   }
+    // Move the motors to the calculated angles
+    Serial.println("--");
+    set_angle(1, traj_step.deg[0], abs(traj_step.vel[0]));
+    set_angle(2, traj_step.deg[1], abs(traj_step.vel[1]));
+    set_angle(3, traj_step.deg[2], abs(traj_step.vel[2]));
 
-  //   // Move the motors to the calculated angles
-  //   set_angle(1, traj_step.theta[0], traj_step.vel[0]);
-  //   set_angle(2, traj_step.theta[1], traj_step.vel[1]);
-  //   set_angle(3, traj_step.theta[2], traj_step.vel[2]);
-
-  //   // Delay until next step
-  //   delay(delay_time);
-  // }
-
-  // float complete_move_time = max_complete_time_step * time_step_delta;
-  // float delay_time = complete_move_time / max_steps;
-
-  // // Find the longest theta distance and create ratio based on that
-  // float theta_distances[3] = {abs(end_thetas[0] - start_thetas[0]), abs(end_thetas[1] - start_thetas[1]), abs(end_thetas[2] - start_thetas[2])};
-  // float max_theta_distance = 0.0;
-  // int max_theta_distance_index;
-  // for (int index = 0; index < 3; index++) {
-  //   if (theta_distances[index] > max_theta_distance_index) {
-  //     max_theta_distance = theta_distances[index];
-  //     max_theta_distance_index = index;
-  //   }
-  // }
-  // // float distance_ratios[3] = {theta_distances[0] / max_theta_distance, theta_distances[1] / max_theta_distance, theta_distances[2] / max_theta_distance};
-  // // Serial.println("distances: " + String(distance_ratios[0]) + ", " + String(distance_ratios[1]) + ", " + String(distance_ratios[2]));
-
-  // // Get the trapezoidal trajectory values for each coordinate
-  // TrajValues traj_values[3];
-  // get_traj(start_points, end_points, traj_values, {1.0, 1.0, 1.0});
-
-  // // Get the highest step values to make those driving the motors move the same amount of steps
-  // for (int coordinate_index = 0; coordinate_index < 3; coordinate_index++) {
-  //   TrajValues traj_value = traj_values[coordinate_index];
-
-  //   if (traj_value.complete_time_step > max_complete_time_step) {
-  //     max_complete_time_step = traj_value.complete_time_step;
-  //   }
-  // }
-
-  // // Change the time step deltas to make the motors move the same amount of steps
-  // for (int coordinate_index = 0; coordinate_index < 3; coordinate_index++) {
-  //   TrajValues traj_value = traj_values[coordinate_index];
-
-  //   time_step_deltas[coordinate_index] = traj_value.complete_time_step / max_complete_time_step * time_step_delta;
-  // }
-
-  // // Check to see if trajectory is unstable
-  // long max_steps = ceil(max_complete_time_step / time_step_delta);
-  // float complete_move_time = max_complete_time_step * time_step_delta;
-  // float delay_time = complete_move_time / max_steps;
-  // float last_coordinates[3] = {start_points[0], start_points[1], start_points[2]};
-  // float step_distances[3] = {0.0, 0.0, 0.0};
-  // float durations[3] = {0.0, 0.0, 0.0};
-  // float positive_directions[3] = {start_points[0] < end_points[0], start_points[1] < end_points[1], start_points[2] < end_points[2]};
-  // float last_thetas[3] = {start_thetas[0], start_thetas[1], start_thetas[2]};
-  // float theta_durations[3] = {0.0, 0.0, 0.0};
-  // float theta_round_distances[3] = {0.0, 0.0, 0.0};
-  // float last_vel[3] = {0.0, 0.0, 0.0};
-  // for (int step_index = 0; step_index <= max_steps; step_index++) {
-  //   TrajStep traj_step;
-  //   for (int coordinate_index = 0; coordinate_index < 3; coordinate_index++) {
-  //     float time_step = time_step_deltas[coordinate_index] * step_index;
-  //     TrajValues traj_value = traj_values[coordinate_index];
-
-  //     get_traj_step(traj_value.start_point, traj_value.end_point, time_step, traj_value.acc_time_step, traj_value.vel_time_step, traj_value.complete_time_step, traj_value.start_vel, traj_value.max_acc_signed, traj_value.max_dec_signed, traj_value.max_vel_signed, traj_value.y_acc, traj_step, coordinate_index);
-  //   }
-
-  //   // // Print out trajectory step values
-  //   // Serial.println("step_index: " + String(String(step_index) + "      ").substring(0, 3) + " || " + "pos: " + String(traj_step.pos[0]) + " - " + String(traj_step.pos[1]) + " - " + String(traj_step.pos[2]) + " || vel: " + String(traj_step.vel[0]) + " - " + String(traj_step.vel[1]) + " - " + String(traj_step.vel[2]) + " || acc: " + String(traj_step.acc[0]) + " - " + String(traj_step.acc[1]) + " - " + String(traj_step.acc[2]));
-
-  //   if (
-  //     (positive_directions[0] && (traj_step.pos[0] < last_coordinates[0] || traj_step.pos[0] > end_points[0])) ||
-  //     (!positive_directions[0] && (traj_step.pos[0] > last_coordinates[0] || traj_step.pos[0] < end_points[0])) ||
-  //     (positive_directions[1] && (traj_step.pos[1] < last_coordinates[1] || traj_step.pos[1] > end_points[1])) ||
-  //     (!positive_directions[1] && (traj_step.pos[1] > last_coordinates[1] || traj_step.pos[1] < end_points[1])) ||
-  //     (positive_directions[2] && (traj_step.pos[2] < last_coordinates[2] || traj_step.pos[2] > end_points[2])) ||
-  //     (!positive_directions[2] && (traj_step.pos[2] > last_coordinates[2] || traj_step.pos[2] < end_points[2]))
-  //   ) {
-  //     Serial.println("Couldn't move along path. Trajectory is unstable. We suggest you change velocity and acceleration values.");
-  //     return;
-  //   }
-
-  //   last_coordinates[0] = traj_step.pos[0];
-  //   last_coordinates[1] = traj_step.pos[1];
-  //   last_coordinates[2] = traj_step.pos[2];
-  // }
-
-  // // Move the motors along trajectory until the end position is reached
-  // Serial.println("max_steps: " + String(max_steps));
-  // float measured_max_vel = 0.0;
-  // float max_step_distance = distances[max_distance_index] / max_steps;
-  // long current_step = 0;
-  // do {
-  //   float current_points[3];
-  //   float current_theta[3] = {odrive_array[0].GetPosition(0), odrive_array[1].GetPosition(0), odrive_array[2].GetPosition(0)};
-  //   calculate_motor_position(current_theta, current_points);
-
-  //   long next_step;
-  //   TrajStep traj_step;
-  //   for (int step_index = current_step; step_index <= max_steps; step_index++) {
-  //     // Get step for max distance
-  //     for (int coordinate_index = 0; coordinate_index < 3; coordinate_index++) {
-  //       float time_step = time_step_deltas[coordinate_index] * (step_index + 1);
-  //       TrajValues traj_value = traj_values[coordinate_index];
-
-  //       get_traj_step(traj_value.start_point, traj_value.end_point, time_step, traj_value.acc_time_step, traj_value.vel_time_step, traj_value.complete_time_step, traj_value.start_vel, traj_value.max_acc_signed, traj_value.max_dec_signed, traj_value.max_vel_signed, traj_value.y_acc, traj_step, coordinate_index);
-  //     }
-
-  //     // Exit loop when next step has been found
-  //     float difference = fabs(traj_step.pos[max_distance_index] - current_points[max_distance_index]);
-  //     if (difference > (max_step_distance / 2)) {
-
-  //       next_step = step_index + 1;
-  //       break;
-  //     }
-  //   }
-
-  //   // Continue loop if still on the same step
-  //   if (current_step == next_step) {
-  //     continue;
-  //   }
-
-  //   // Break the loop if outside of bounds
-  //   if (traj_step.pos[0] > x_max || traj_step.pos[0] < x_min || traj_step.pos[1] > y_max || traj_step.pos[1] < y_min || traj_step.pos[2] > z_max || traj_step.pos[2] < z_min) {
-  //     Serial.println("Outside of bounds. Movement stopped.");
-  //     break;
-  //   }
-
-  //   float measured_vel = abs(odrive_array[max_distance_index].GetVelocity(0));
-  //   if (measured_max_vel < measured_vel) {
-  //     measured_max_vel = measured_vel;
-  //   }
-
-  //   // Calculate theta velocities from step velocities
-  //   float theta_vel_1 = (traj_step.vel[0] / max_theta_vel) * max_theta_vel;
-  //   float theta_vel_2 = (traj_step.vel[1] / max_theta_vel) * max_theta_vel;
-  //   float theta_vel_3 = (traj_step.vel[2] / max_theta_vel) * max_theta_vel;
-
-  //   // Move the motors to the calculated angles
-  //   set_position(traj_step.pos[0], traj_step.pos[1], traj_step.pos[2], theta_vel_1, theta_vel_2, theta_vel_3);
-
-  //   // Update current step
-  //   current_step = next_step;
-  // } while (max_steps > current_step);
-
-  // Serial.println("measured_max_vel: " + String(measured_max_vel));
+    // Delay until next step
+    delay(time_step_delta * 1000); // Convert to milliseconds
+  }
 }
 
 void set_position(float x, float y, float z, float vel_1, float vel_2, float vel_3) {
-  // Serial.println("set_position x: " + String(x) + " || y: " + String(y) + " || z: " + String(z) + " || vel_x: " + String(vel_x) + " || vel_y: " + String(vel_y) + " || vel_z: " + String(vel_z));
-
   // Calculate angles
   float theta_degs[3];
   calculate_motor_angles(x, y, z, theta_degs);
 
   // Move the motors to the calculated angles
-  set_angle(1, theta_degs[0], vel_1);
-  set_angle(2, theta_degs[1], vel_2);
-  set_angle(3, theta_degs[2], vel_3);
-
-  // // Update current position
-  // current_position[0] = x;
-  // current_position[1] = y;
-  // current_position[2] = z;
+  set_angle(1, theta_degs[0], abs(vel_1));
+  set_angle(2, theta_degs[1], abs(vel_2));
+  set_angle(3, theta_degs[2], abs(vel_3));
 }
 
-
-
 void set_angle(int odrive_number, float theta_deg, float vel) {
-  // Serial.println("set_angle odrive_number: " + String(odrive_number) + " || theta_deg: " + String(theta_deg) + " || vel: " + String(vel));
-
   if (theta_deg == NULL) {
     Serial.println("Position is out of bounds.");
     return;
   }
 
   // Check to see if angle will collide with spacer
-  if (min_angle > theta_deg || min_angle > theta_deg) {
+  if (min_angle_deg > theta_deg || min_angle_deg > theta_deg) {
     Serial.println("Position more than max or less than min.");
     Serial.println(theta_deg);
     return;
@@ -285,10 +175,20 @@ void set_angle(int odrive_number, float theta_deg, float vel) {
   float real_theta_rad = real_theta_deg * PI / 180;
   float real_theta_rounds = real_theta_rad / (2 * PI) * gear_ratio;
 
+  // Calculate velocity in rounds per second
+  float vel_rounds = abs(vel / 360 * gear_ratio);
+  // vel_rounds = max(vel_rounds, 0.1); // Make sure velocity is at least 0.1 rounds per second
+
+  Serial.println("set_angle odrive_number: " + String(odrive_number) + " || theta_deg: " + String(theta_deg) + " || vel: " + String(vel) + " || real_theta_rounds: " + String(real_theta_rounds) + " || vel_rounds: " + String(vel_rounds));
+
   // TODO: Find out if we can se velocity using `q` (https://docs.odriverobotics.com/v/latest/ascii-protocol.html#motor-position) or figure out what feed-forward is
   // Set the motor angle
-  // odrive_array[odrive_number - 1].SetPosition(0, real_theta_rounds);
-  odrive_array[odrive_number - 1].SetPosition(0, real_theta_rounds, vel, 0.1);
+  // odrive_array[odrive_number - 1].SetPosition(0, real_theta_rounds, max_deg_vel, 0.1);
+  odrive_array[odrive_number - 1].SetPosition(0, real_theta_rounds, vel_rounds);
+
+  // HACK: Save last position so we don't need to query ODrive
+  last_thetas[odrive_number - 1] = real_theta_rounds;
+  // Serial.println("-- " + String(odrive_number) + " || " + String(theta_deg) + " || " + String(real_theta_rounds) + " || " + String(vel_rounds));
 }
 
 // Calculate the motor angles for a given end effector position
@@ -327,7 +227,6 @@ void calculate_motor_angle(float x0, float y0, float z0, float &theta_deg) {
 
 // Calculate the position of the end-effector
 void calculate_motor_position(float theta_rounds[3], float coordinates[3]) {
-
   // Calculate the real theta degrees
   float real_theta_degs[3];
   for (int odrive_index = 0; odrive_index < 3; odrive_index++) {
