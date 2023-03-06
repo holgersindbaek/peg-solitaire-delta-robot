@@ -87,14 +87,15 @@ const float max_angle_deg = 115.0;
 
 // Trajectory parameters
 // NOTE: To get a trajectory that isn't out of control, velocity and acceleration should be close to each other
-const float throttle_factor = 0.1;                    // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
+const float throttle_factor = 1.0;                    // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
 const float time_step_delta = 0.1;                   // Decide which timesteps to divide the trajectory into (s)
-const float max_motor_vel = 8.0 * throttle_factor;    // Max trajectory velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
-const float max_motor_acc = 8.0 * throttle_factor;    // Max motor acceleration (rounds/s^2)
-const float max_motor_dec = 8.0 * throttle_factor;    // Max motor deceleration (rounds/s^2) (should be positive)
-const float max_deg_vel = (max_motor_vel * 360) / gear_ratio;
-const float max_deg_acc = (max_motor_acc * 360) / gear_ratio;
-const float max_deg_dec = (max_motor_dec * 360) / gear_ratio;
+const float max_vel_acc_ratio = 20.0;                 // Max ratio between velocity and acceleration
+const float max_theta_vel = 10.0 * throttle_factor;    // Max trajectory velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
+const float max_theta_acc = max_theta_vel * max_vel_acc_ratio; // Max motor acceleration (rounds/s^2)
+const float max_theta_dec = max_theta_vel * max_vel_acc_ratio; // Max motor deceleration (rounds/s^2) (should be positive)
+const float max_pos_vel = max_theta_vel * 8;                       // Max trajectory velocity (mm/s)
+const float max_pos_acc = max_pos_vel * max_vel_acc_ratio;
+const float max_pos_dec = max_pos_vel * max_vel_acc_ratio;
 
 void setup() {
   // ODrive uses 115200 baud
@@ -120,7 +121,7 @@ void setup() {
 
   // Set parameters for ODrives
   for (int drive_index = 0; drive_index < 3; ++drive_index) {
-    odrive_serial_array[drive_index]->println("w axis0.controller.config.vel_limit " + String(max_motor_vel));
+    odrive_serial_array[drive_index]->println("w axis0.controller.config.vel_limit " + String(max_theta_vel));
     odrive_serial_array[drive_index]->println("w axis0.controller.config.vel_limit_tolerance " + String(2.0)); // 100%  overshot allowance
   }
 
@@ -136,9 +137,8 @@ void setup() {
   Serial.println("// Ready for your commands...");
   Serial.println("////////////////////////////////");
 
-  Serial.println("max_motor_vel " + String(max_motor_vel));
-  Serial.println("max_deg_vel " + String(max_deg_vel));
-  Serial.println("max_deg_acc " + String(max_deg_acc));
+  Serial.println("max_motor_vel: " + String(max_theta_vel));
+  Serial.println("max_deg_vel: " + String(max_pos_vel));
 }
 
 void loop() {

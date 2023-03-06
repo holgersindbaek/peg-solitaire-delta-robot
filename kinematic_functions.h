@@ -21,14 +21,18 @@
   extern const float y_min;
   extern const float z_max;
   extern const float z_min;
-  extern const float time_step_delta;
-  extern const float max_deg_vel;
-  extern const float min_angle_deg;
   extern const float max_angle_deg;
+  extern const float min_angle_deg;
+  extern const float time_step_delta;
+  extern const float max_pos_vel;
+  extern const float max_pos_acc;
+  extern const float max_pos_dec;
+  extern const float max_theta_vel;
+  extern const float max_theta_acc;
 
   void move_to_position(float x, float y, float z);
-  void set_position(float x, float y, float z, float vel_x = max_deg_vel, float vel_y = max_deg_vel, float vel_z = max_deg_vel);
-  void set_angle(int odrive_number, float theta_deg, float vel = max_deg_vel);
+  void set_position(float x, float y, float z, float vel_x = max_theta_vel, float vel_y = max_theta_vel, float vel_z = max_theta_vel);
+  void set_angle(int odrive_number, float theta_deg, float vel = max_theta_vel);
   void calculate_motor_angles(float x, float y, float z, float theta_degs[3]);
   void calculate_motor_angle(float x0, float y0, float z0, float &theta_deg);
   void calculate_motor_position(float theta_rounds[3], float coordinates[3]);
