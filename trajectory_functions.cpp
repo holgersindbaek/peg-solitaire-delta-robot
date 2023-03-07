@@ -92,7 +92,7 @@ void get_trapezoidal_traj(float start_pos, float end_pos, float start_vel, float
 
 void get_traj_step(float start_pos, float end_pos, float time_step, float acc_time_step, float vel_time_step, float complete_time_step, float vel, float max_acc_signed, float max_dec_signed, float max_vel_signed, float y_acc, TrajStep &traj_step, int coordinate_index) {
   // Serial.print("STEP: " + String(time_step) + " - " + String(acc_time_step) + " - " + String(vel_time_step) + " - " + String(complete_time_step));
-  if (time_step < 0.0) { // Initial Condition
+  if (time_step <= 0.0) { // Initial Condition
     // Serial.println(" - Initial Condition");
     traj_step.pos[coordinate_index] = start_pos;
     traj_step.vel[coordinate_index] = vel;

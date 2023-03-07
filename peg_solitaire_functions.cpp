@@ -8,12 +8,13 @@ const int num_cols = 7;
 const float row_spacing = 27.5; // Distance between rows (mm)
 const float col_spacing = 27.5; // Distance between columns (mm)
 const float peg_height = 10.0;  // Height of pegs above board (mm)
-const float safety_height = 10.0;
+const float safety_height = 30.0;
 const float ball_height_suction = 15;
 const float z_movement = z_zero + board_top_offset + suction_bottom_offset + peg_height + safety_height;
 const float z_grabbing = z_zero + board_top_offset + suction_grab_offset + peg_height;
 const float z_dropping = z_grabbing + 5;
 const float z_ball_movement = z_movement + ball_height_suction;
+const float z_discard = z_grabbing + 28;
 
 // Peg Solitaire game state
 bool board[num_rows][num_cols] = {
@@ -64,16 +65,14 @@ void play_winning_peg_solitaire() {
   };
 
   // Move to starting position
-  float start_thetas[3] = {odrive_array[0].GetPosition(0), odrive_array[1].GetPosition(0), odrive_array[2].GetPosition(0)};
-  float start_points[3];
-  calculate_motor_position(start_thetas, start_points);
-  move_to_position(start_points[0], start_points[1], z_ball_movement);
   move_to_position(0, 0, z_ball_movement);
 
+  delay(5000);
+
   // Run through winning sequence
-  for (int step = 0; step < 32; step++) {
+  for (int step = 0; step < 31; step++) {
     Serial.println("step: " + String(step));
-    
+
     // Move suction cup to peg, go down, grab peg and go up
     int from_row = winning_sequence[step][0][0];
     int from_col = winning_sequence[step][0][1];
@@ -81,7 +80,8 @@ void play_winning_peg_solitaire() {
     peg_coordinate(from_row, from_col, from_x, from_y);
     move_to_position(from_x , from_y, z_movement);
     set_suction_state(1);
-    move_to_position(from_x, from_y, z_grabbing);
+    move_to_position(from_x, from_y, z_grabbing, 0.1);
+    delay(250);
     move_to_position(from_x, from_y, z_ball_movement);
 
     // Move ball from center to other hole, back and move suction cup up again
@@ -101,18 +101,20 @@ void play_winning_peg_solitaire() {
     peg_coordinate(remove_row, remove_col, remove_x, remove_y);
     move_to_position(remove_x, remove_y, z_movement);
     set_suction_state(1);
-    move_to_position(remove_x, remove_y, z_grabbing);
+    move_to_position(remove_x, remove_y, z_grabbing, 0.1);
     move_to_position(remove_x, remove_y, z_ball_movement);
     float drop_start_x, drop_start_y, drop_end_x, drop_end_y;
-    drop_coordinate(step + 2, drop_start_x, drop_start_y);
+    drop_coordinate(step + 3, drop_start_x, drop_start_y);
     drop_coordinate(step, drop_end_x, drop_end_y);
     move_to_position(drop_start_x, drop_start_y, z_ball_movement);
-    move_to_position(drop_end_x, drop_end_y, z_dropping);
+    move_to_position(drop_start_x, drop_start_y, z_discard);
+    move_to_position(drop_end_x, drop_end_y, z_dropping, 0.1);
     set_suction_state(2);
-    move_to_position(drop_end_x, drop_end_y, z_movement);
+    move_to_position(drop_end_x, drop_end_y, z_ball_movement);
   }
 
   // Go back to starting position
+  delay(1000);
   move_to_position(4, 4, z_ball_movement);
 }
 
@@ -208,9 +210,6 @@ void drop_coordinate(int step, float &x, float &y) {
   // Calculate drop placement of ball
   float x_pos = -(board_drop_radius * cos(degrees * PI / 180));
   float y_pos = -(board_drop_radius * sin(degrees * PI / 180));
-
-  Serial.println(x_pos);
-  Serial.println(y_pos);
 
   // Rotate coordinates in relation to board rotation
   x = x_pos * cos(board_offset_degrees * PI / 180) - y_pos * sin(board_offset_degrees * PI / 180);

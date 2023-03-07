@@ -9,6 +9,7 @@
 
   extern ODriveArduino odrive_array[];
   extern HardwareSerial *odrive_serial_array[];
+  extern float last_thetas[];
   extern float zero_offset_array[];
   extern const float horizontal_offset_angle;
   extern const int gear_ratio;

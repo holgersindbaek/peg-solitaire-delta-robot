@@ -65,6 +65,9 @@ float zero_offset_array[3] = {
 // HACK: ODrive doesn't always return the correct position, so save the last known position the motors
 float last_thetas[3] = {NAN, NAN, NAN};
 
+// Current position of the end-effector
+float current_pos[3] = {NAN, NAN, NAN};
+
 // Robot parameters. Definitions are as follows: https://imgur.com/a/edboVco.
 const float l_s = 554.27;                    // Base radius (mm) (f)
 const float r_o = 160.0;                     // Bicep length (mm) (rf)
@@ -81,7 +84,7 @@ const float z_min = -250;
 const float z_zero = -250;                   // Position of y when end-effector is zeroed (mm)
 const float board_top_offset = -3;           // Offset from top of board to zero (mm)
 const float suction_bottom_offset = 20;      // Offset for bottom of suction cup (mm)
-const float suction_grab_offset = 14;        // Offset for making suction cub grab (mm)
+const float suction_grab_offset = 11;        // Offset for making suction cub grab (mm)
 const float min_angle_deg = 0.0;             // Min and max angles for the robot
 const float max_angle_deg = 115.0;
 
@@ -89,7 +92,7 @@ const float max_angle_deg = 115.0;
 // NOTE: To get a trajectory that isn't out of control, velocity and acceleration should be close to each other
 const float throttle_factor = 1.0;                    // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
 const float time_step_delta = 0.1;                   // Decide which timesteps to divide the trajectory into (s)
-const float max_vel_acc_ratio = 20.0;                 // Max ratio between velocity and acceleration
+const float max_vel_acc_ratio = 30.0;                 // Max ratio between velocity and acceleration
 const float max_theta_vel = 10.0 * throttle_factor;    // Max trajectory velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
 const float max_theta_acc = max_theta_vel * max_vel_acc_ratio; // Max motor acceleration (rounds/s^2)
 const float max_theta_dec = max_theta_vel * max_vel_acc_ratio; // Max motor deceleration (rounds/s^2) (should be positive)
@@ -136,9 +139,6 @@ void setup() {
   Serial.println("////////////////////////////////");
   Serial.println("// Ready for your commands...");
   Serial.println("////////////////////////////////");
-
-  Serial.println("max_motor_vel: " + String(max_theta_vel));
-  Serial.println("max_deg_vel: " + String(max_pos_vel));
 }
 
 void loop() {
@@ -199,8 +199,8 @@ void loop() {
     Serial << "Finished " << function_name << "...\n\n";
   }
 
-  // // Set position of end-effector if current position is set
-  // if (current_position[0] != -1.0 && current_position[1] != -1.0 && current_position[2] != -1.0) {
-  //   set_position(current_position[0], current_position[1], current_position[2]);
-  // }
+  // Set position of end-effector if current position is set
+  if (!isnan(current_pos[0]) && !isnan(current_pos[1]) && !isnan(current_pos[2])) {
+    set_position(current_pos[0], current_pos[1], current_pos[2]);
+  }
 }
