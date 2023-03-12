@@ -16,18 +16,6 @@ const float z_dropping = z_grabbing + 5;
 const float z_ball_movement = z_movement + ball_height_suction;
 const float z_discard = z_grabbing + 28;
 
-// Peg Solitaire game state
-bool board[num_rows][num_cols] = {
-  {false, false, true, true, true, false, false},
-  {false, false, true, true, true, false, false},
-  {true, true, true, true, true, true, true},
-  {true, true, true, false, true, true, true},
-  {true, true, true, true, true, true, true},
-  {false, false, true, true, true, false, false},
-  {false, false, true, true, true, false, false}
-};
-int num_pegs = 32;
-
 void play_winning_peg_solitaire() {
   // Winning sequence for peg solitaire - starting row-col to ending row-col
   int winning_sequence[32][3][2] = {
@@ -66,8 +54,7 @@ void play_winning_peg_solitaire() {
 
   // Move to starting position
   move_to_position(0, 0, z_ball_movement);
-
-  delay(5000);
+  delay(3000);
 
   // Run through winning sequence
   for (int step = 0; step < 31; step++) {
@@ -118,74 +105,6 @@ void play_winning_peg_solitaire() {
   move_to_position(4, 4, z_ball_movement);
 }
 
-void play_random_peg_solitaire() {
-  Serial.println("Errors 1: " + String(odrive_array[0].GetActiveError(0)) + " || " + String(odrive_array[0].GetDisarmReason(0)));
-  Serial.println("Errors 2: " + String(odrive_array[1].GetActiveError(0)) + " || " + String(odrive_array[1].GetDisarmReason(0)));
-  Serial.println("Errors 3: " + String(odrive_array[2].GetActiveError(0)) + " || " + String(odrive_array[2].GetDisarmReason(0)));
-
-  // int from_row = 4;
-  // int from_col = 6;
-  // float from_x, from_y;
-  // peg_coordinate(from_row, from_col, from_x, from_y);
-  // move_to_position(from_x, from_y, z_grabbing);
-
-  // float discard_x, discard_y;
-  // peg_coordinate(4, 1, discard_x, discard_y);
-  // move_to_position(0, -110, z_ball_movement);
-  // delay(5000);
-  // move_to_position(0, -110, z_grabbing-8);
-  // delay(5000);
-  // move_to_position(row_spacing, -110, z_grabbing-8);
-  // move_to_position(row_spacing, -111, z_movement);
-
-  // float x, y;
-  // move_to_position(0, 0, y_grabbing);
-  // delay(1000);
-  // peg_coordinate(0, 3, x, y);
-  // move_to_position(x, y, y_grabbing - 10);
-  // delay(5000);
-  // move_to_position(0, 0, y_grabbing);
-  // delay(1000);
-  // peg_coordinate(6, 3, x, y);
-  // move_to_position(x, y, y_grabbing - 10);
-  // delay(5000);
-  // move_to_position(0, 0, y_grabbing);
-  // delay(1000);
-  // peg_coordinate(3, 0, x, y);
-  // move_to_position(x, y, y_grabbing - 10);
-  // delay(5000);
-  // move_to_position(0, 0, y_grabbing);
-  // delay(1000);
-  // peg_coordinate(3, 6, x, y);
-  // move_to_position(x, y, y_grabbing - 10);
-  // delay(5000);
-  // move_to_position(0, 0, y_grabbing);
-  // while (num_pegs > 1) {
-  //   // Find a valid move
-  //   int from_row, from_col, to_row, to_col;
-  //   if (!findValidMove(from_row, from_col, to_row, to_col)) {
-  //     // No valid move found, game over
-  //     break;
-  //   }
-    
-  //   // // Move the peg to the new location
-  //   // move_to_position(from_row, from_col, peg_height);
-  //   // delay(500);
-  //   // move_to_position(from_row, from_col, hole_depth);
-  //   // delay(500);
-  //   // board[from_row][from_col] = false;
-  //   // num_pegs--;
-  //   // move_to_position(to_row, to_col, hole_depth);
-  //   // delay(500);
-  //   // move_to_position(to_row, to_col, peg_height);
-  //   // delay(500);
-  //   // board[to_row][to_col] = true;
-  //   // num_pegs++;
-  //   // move_to_position(to_row, to_col, hole_depth);
-  //   // delay(500);
-  // }
-}
-
 void peg_coordinate(int row, int col, float &x, float &y) {
   // Return if position doens't exist on board
   if (row < 0 || row > num_rows || col < 0 || col > num_cols) {
@@ -215,52 +134,3 @@ void drop_coordinate(int step, float &x, float &y) {
   x = x_pos * cos(board_offset_degrees * PI / 180) - y_pos * sin(board_offset_degrees * PI / 180);
   y = y_pos * cos(board_offset_degrees * PI / 180) + x_pos * sin(board_offset_degrees * PI / 180);
 }
-
-// // Find a valid move on the Peg Solitaire board
-// bool findValidMove(int& from_row, int& from_col, int& to_row, int& to_col) {
-//   // Check all possible moves
-//   for (int row = 0; row < num_rows; row++) {
-//     for (int col = 0; col < num_cols; col++) {
-//       if (board[row][col]) {
-//         // Check up
-//         if (row >= 2 && board[row-1][col] && board[row-2][col]) {
-//           from_row = row;
-//           from_col = col;
-//           to_row = row-2;
-//           to_col = col;
-//           return true;
-//         }
-
-//         // Check down
-//         if (row <= num_rows-3 && board[row+1][col] && board[row+2][col]) {
-//           from_row = row;
-//           from_col = col;
-//           to_row = row+2;
-//           to_col = col;
-//           return true;
-//         }
-
-//         // Check left
-//         if (col >= 2 && board[row][col-1] && board[row][col-2]) {
-//           from_row = row;
-//           from_col = col;
-//           to_row = row;
-//           to_col = col-2;
-//           return true;
-//         }
-
-//         // Check right
-//         if (col <= num_cols-3 && board[row][col+1] && board[row][col+2]) {
-//           from_row = row;
-//           from_col = col;
-//           to_row = row;
-//           to_col = col+2;
-//           return true;
-//         }
-//       }
-//     }
-//   }
-
-//   // No valid move found
-//   return false;
-// }

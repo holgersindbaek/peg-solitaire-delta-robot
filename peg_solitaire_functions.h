@@ -12,8 +12,6 @@
   extern const float suction_grab_offset;
 
   void play_winning_peg_solitaire();
-  void play_random_peg_solitaire();
   void peg_coordinate(int row, int col, float &x, float &y);
   void drop_coordinate(int step, float &x, float &y);
-  // bool findValidMove(int& from_row, int& from_col, int& to_row, int& to_col);
 #endif

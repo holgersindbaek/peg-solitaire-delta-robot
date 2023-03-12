@@ -33,7 +33,7 @@
 
   void move_to_position(float x, float y, float z, float speed_throttle = 1.0);
   void set_position(float x, float y, float z, float vel_x = max_theta_vel, float vel_y = max_theta_vel, float vel_z = max_theta_vel);
-  void set_angle(int odrive_number, float theta_deg, float vel = max_theta_vel);
+  void set_angle(int odrive_number, float theta_deg, float theta_vel = max_theta_vel);
   void calculate_motor_angles(float x, float y, float z, float theta_degs[3]);
   void calculate_motor_angle(float x0, float y0, float z0, float &theta_deg);
   void calculate_motor_position(float theta_rounds[3], float coordinates[3]);

@@ -32,8 +32,8 @@ template<>        inline Print& operator <<(Print &obj, float arg) { obj.print(a
 #include "peg_solitaire_functions.h"
 
 // Setup vacuum
-Servo solenoid_valve_servo;   // Solenoid valve
-Servo air_pump_servo; // Air pump
+Servo solenoid_valve_servo; // Solenoid valve
+Servo air_pump_servo;       // Air pump
 
 ////////////////////////////////
 // Set up ODrive
@@ -69,34 +69,34 @@ float last_thetas[3] = {NAN, NAN, NAN};
 float current_pos[3] = {NAN, NAN, NAN};
 
 // Robot parameters. Definitions are as follows: https://imgur.com/a/edboVco.
-const float l_s = 554.27;                    // Base radius (mm) (f)
+const float l_s = 554.27;                    // Base triangle length (mm) (f)
 const float r_o = 160.0;                     // Bicep length (mm) (rf)
 const float r_u = 220.0;                     // Forearm length (mm) (re)
-const float l_m = 138.57;                    // End effector length (mm) (e)
+const float l_m = 138.57;                    // End effector triangle length (mm) (e)
 const int gear_ratio = 8;                    // Gear ratio
 const float horizontal_offset_angle = -63.2; // Angle of the horizontal offset
+const float z_zero = -250;                   // Position of y when end-effector is zeroed (mm)
 const float x_max = 115;                     // Boundaries of the workspace
 const float x_min = -115;
 const float y_max = 115;
 const float y_min = -115;
 const float z_max = -160;
 const float z_min = -250;
-const float z_zero = -250;                   // Position of y when end-effector is zeroed (mm)
+const float min_angle_deg = 0.0;             // Min and max angles for the robot
+const float max_angle_deg = 115.0;
 const float board_top_offset = -3;           // Offset from top of board to zero (mm)
 const float suction_bottom_offset = 20;      // Offset for bottom of suction cup (mm)
 const float suction_grab_offset = 11;        // Offset for making suction cub grab (mm)
-const float min_angle_deg = 0.0;             // Min and max angles for the robot
-const float max_angle_deg = 115.0;
 
 // Trajectory parameters
-// NOTE: To get a trajectory that isn't out of control, velocity and acceleration should be close to each other
-const float throttle_factor = 1.0;                    // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
-const float time_step_delta = 0.1;                   // Decide which timesteps to divide the trajectory into (s)
-const float max_vel_acc_ratio = 30.0;                 // Max ratio between velocity and acceleration
-const float max_theta_vel = 10.0 * throttle_factor;    // Max trajectory velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
+const float throttle_factor = 1.0;                             // How much to throttle the trajectory - Used for testing purposes (0.0 - 1.0)
+const float time_step_delta = 0.1;                             // Decide which timesteps to divide the trajectory into (s)
+const float max_vel_acc_ratio = 30.0;                          // Max ratio between velocity and acceleration
+const float max_theta_vel = 10.0 * throttle_factor;            // Max trajectory velocity (rounds/s) (motor max is 9900RPM = 165RPS: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0)
 const float max_theta_acc = max_theta_vel * max_vel_acc_ratio; // Max motor acceleration (rounds/s^2)
 const float max_theta_dec = max_theta_vel * max_vel_acc_ratio; // Max motor deceleration (rounds/s^2) (should be positive)
-const float max_pos_vel = max_theta_vel * 8;                       // Max trajectory velocity (mm/s)
+const float theta_pos_ratio = 8;                               // Motor to end-effector velocity ratio
+const float max_pos_vel = max_theta_vel * theta_pos_ratio;     // Max trajectory velocity (mm/s)
 const float max_pos_acc = max_pos_vel * max_vel_acc_ratio;
 const float max_pos_dec = max_pos_vel * max_vel_acc_ratio;
 
@@ -150,6 +150,7 @@ void loop() {
     int num_params = count_occurrences(parameter_string, ',') + 1;  // count the number of parameters in the input string
     float params[num_params]; // create an array to store the parameters
     extract_parameters(parameter_string, params, num_params); // extract the parameters from the input string
+
     Serial << "Running " << function_name << "...\n";
 
     if (function_name == "calibrate_drives") {
@@ -177,7 +178,8 @@ void loop() {
       float x = params[0];
       float y = params[1];
       float z = params[2];
-      move_to_position(x, y, z);
+      float speed_throttle = params[3];
+      move_to_position(x, y, z, isnan(speed_throttle) ? 1.0 : speed_throttle);
     } else if (function_name == "set_position") {
       float x = params[0];
       float y = params[1];
@@ -192,8 +194,6 @@ void loop() {
       set_suction_state(state);
     } else if (function_name == "play_winning_peg_solitaire") {
       play_winning_peg_solitaire();
-    } else if (function_name == "play_random_peg_solitaire") {
-      play_random_peg_solitaire();
     }
 
     Serial << "Finished " << function_name << "...\n\n";

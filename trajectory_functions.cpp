@@ -78,48 +78,31 @@ void get_trapezoidal_traj(float start_pos, float end_pos, float start_vel, float
   max_vel_signed_ = max_vel_signed;
   max_dec_signed_ = max_dec_signed;
   y_acc_ = y_acc;
-
-  // Serial.println("--");
-  // Serial.println("delta_dis: " + String(delta_dis));
-  // Serial.println("stop_dist: " + String(stop_dist));
-  // Serial.println("delta_dis_stop: " + String(delta_dis_stop));
-  // Serial.println("stop_dist: " + String(stop_dist));
-  // Serial.println("acc_time_step_: " + String(acc_time_step_));
-  // Serial.println("vel_time_step_: " + String(vel_time_step_));
-  // Serial.println("complete_time_step_: " + String(complete_time_step_));
-  // Serial.println("max_vel_signed_: " + String(max_vel_signed_));
 }
 
 void get_traj_step(float start_pos, float end_pos, float time_step, float acc_time_step, float vel_time_step, float complete_time_step, float vel, float max_acc_signed, float max_dec_signed, float max_vel_signed, float y_acc, TrajStep &traj_step, int coordinate_index) {
-  // Serial.print("STEP: " + String(time_step) + " - " + String(acc_time_step) + " - " + String(vel_time_step) + " - " + String(complete_time_step));
   if (time_step <= 0.0) { // Initial Condition
-    // Serial.println(" - Initial Condition");
     traj_step.pos[coordinate_index] = start_pos;
     traj_step.vel[coordinate_index] = vel;
     traj_step.acc[coordinate_index] = 0.0;
 
   } else if (time_step < acc_time_step) { // Accelerating
-    // Serial.println(" - Accelerating");
     traj_step.pos[coordinate_index] = start_pos + vel * time_step + 0.5 * max_acc_signed * pow(time_step, 2);
     traj_step.vel[coordinate_index] = vel + max_acc_signed * time_step;
     traj_step.acc[coordinate_index] = max_acc_signed;
 
   } else if (time_step < acc_time_step + vel_time_step) { // Coasting
-    // Serial.println(" - Coasting");
     traj_step.pos[coordinate_index] = y_acc + max_vel_signed * (time_step - acc_time_step);
     traj_step.vel[coordinate_index] = max_vel_signed;
     traj_step.acc[coordinate_index] = 0.0;
   
   } else if (time_step < complete_time_step) { // Deceleration
-    // Serial.println(" - Deceleration");
-
     float td = time_step - complete_time_step;
     traj_step.pos[coordinate_index] = end_pos + 0.5 * max_dec_signed * pow(td, 2);
     traj_step.vel[coordinate_index] = max_dec_signed * td;
     traj_step.acc[coordinate_index] = max_dec_signed;
   
   } else if (time_step >= complete_time_step) { // Final Condition
-    // Serial.println(" - Final Condition");
     traj_step.pos[coordinate_index] = end_pos;
     traj_step.vel[coordinate_index] = 0.0;
     traj_step.acc[coordinate_index] = 0.0;
