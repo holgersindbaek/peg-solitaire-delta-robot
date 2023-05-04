@@ -4,7 +4,7 @@ This is part of a graduation project made at DTU (Technical University of Denmar
 
 A thorough description of the thoughts and calculations that led up to the creation of this delta-robot can be found in a series of blog posts, the first of which goes through the [inverse calculations of a delta-robot](https://online-solitaire.com/blog/calculating-the-inverse-kinematics-for-a-peg-solitaire-playing-delta-robot/).
 
-In this repository, you'll find all the code necessary to get Peggy to play Peg Solitaire. You can see the robot in action here: [[World of Card Games](https://www.youtube.com/watch?v=wCAqL-u2s_U)](https://www.youtube.com/watch?v=wCAqL-u2s_U).
+In this repository, you'll find all the code necessary to get Peggy to play Peg Solitaire. You can see the robot in action here: [https://www.youtube.com/watch?v=wCAqL-u2s_U](https://www.youtube.com/watch?v=wCAqL-u2s_U).
 
 The robot was designed, created and programmed from scratch, mainly using laser-cutting as the predominant production technique and an Arduino and three ODrives to control the actuators. 
 
