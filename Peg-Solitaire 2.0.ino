@@ -178,8 +178,7 @@ void loop() {
       float x = params[0];
       float y = params[1];
       float z = params[2];
-      float speed_throttle = params[3];
-      move_to_position(x, y, z, isnan(speed_throttle) ? 1.0 : speed_throttle);
+      move_to_position(x, y, z);
     } else if (function_name == "set_position") {
       float x = params[0];
       float y = params[1];
